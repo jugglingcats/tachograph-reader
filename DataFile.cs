@@ -5,6 +5,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using DataFileReader;
+using System.Text.RegularExpressions;
 
 namespace DataFileReader
 {
@@ -415,7 +416,7 @@ namespace DataFileReader
 		{
 			// we just use the default encoding in the default case
 			this.ProcessInternal(reader, Encoding.Default);
-			writer.WriteString(text);
+            writer.WriteString(Regex.Replace(text, @"[^\u0020-\u007E]", string.Empty));
 		}
 
 		public override string ToString()
