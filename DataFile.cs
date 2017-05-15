@@ -352,7 +352,8 @@ namespace DataFileReader
 		XmlElement("ExtendedSerialNumber", typeof(ExtendedSerialNumberRegion)),
 		XmlElement("Object", typeof(ContainerRegion)),
 		XmlElement("TimeReal", typeof(TimeRealRegion)),
-		XmlElement("ActivityChange", typeof(ActivityChangeRegion)),
+        XmlElement("Datef", typeof(DatefRegion)),
+        XmlElement("ActivityChange", typeof(ActivityChangeRegion)),
 		XmlElement("FullCardNumber", typeof(FullCardNumberRegion)),
 		XmlElement("Flag", typeof(FlagRegion)),
 		XmlElement("UInt24", typeof(UInt24Region)),
@@ -554,10 +555,36 @@ namespace DataFileReader
 		{
 			return string.Format("{0}", dateTime);
 		}
-
 	}
 
-	public enum EquipmentType
+    // see page 56 (BCDString) and page 69 (Datef) - 2 byte encoded date in yyyy mm dd format
+    public class DatefRegion : Region
+    {
+        private DateTime dateTime;
+
+        protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+        {
+            byte yy1=reader.ReadByte();
+            byte yy2 = reader.ReadByte();
+            byte mm = reader.ReadByte();
+            byte dd = reader.ReadByte();
+
+            int year = ((yy1 & 0xF0) >> 4) * 1000 + (yy1 & 0xF) * 100 + ((yy2 & 0xF0) >> 4) * 10 + (yy2 & 0xF);
+            int month = ((mm & 0xF0) >> 4) * 10 + (mm & 0xF);
+            int day = ((dd & 0xF0) >> 4) * 10 + (dd & 0xF);
+
+            dateTime = new DateTime(year, month, day);
+
+            writer.WriteAttributeString("Datef", dateTime.ToString());
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0}", dateTime);
+        }
+    }
+
+    public enum EquipmentType
 	{
 		DriverCard=1,
 		WorkshopCard=2,
