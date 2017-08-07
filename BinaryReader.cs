@@ -47,7 +47,7 @@ namespace DataFileReader
 
 		public string ReadString(int length)
 		{
-			return ReadString(length, Encoding.Default);
+			return ReadString(length, Encoding.ASCII);
 		}
 
 		public string ReadString(int length, Encoding enc)

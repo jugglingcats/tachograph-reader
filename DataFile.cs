@@ -415,7 +415,7 @@ namespace DataFileReader
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
 			// we just use the default encoding in the default case
-			this.ProcessInternal(reader, Encoding.Default);
+			this.ProcessInternal(reader, Encoding.ASCII);
 			writer.WriteString(text);
 		}
 
@@ -444,16 +444,22 @@ namespace DataFileReader
 		{
 			// get the codepage
 			codepage=reader.ReadByte();
-			Encoding enc=Encoding.Default;
-			try
+			// codePage specifies the part of the ISO/IEC 8859 used to code this string
+			Encoding enc=Encoding.ASCII;
+			if (codepage > 0 && codepage <= 16)
 			{
-				// try to get the encoding
-				enc=Encoding.GetEncoding(codepage);
-			} 
-			catch ( Exception )
+				try
+				{
+					// when codepage=1 it is ISO-8859-1
+					enc=Encoding.GetEncoding("ISO-8859-" + codepage.ToString());
+				}
+				catch ( Exception e )
+				{
+					WriteLine(LogLevel.WARN, "Failed to work with codepage {0}, '{1}'", codepage, e.Message);
+				}
+			} else
 			{
-				// TODO: H: work out what the code page should be
-				// Console.WriteLine("WARN: Failed to work with codepage {0}, '{1}'", codepage, e.Message);
+				WriteLine(LogLevel.WARN, "Unknown codepage {0}", codepage);
 			}
 			// read string using encoding
 			base.ProcessInternal(reader, enc);
