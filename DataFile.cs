@@ -805,15 +805,16 @@ namespace DataFileReader
 
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
+			// format: scpaattt tttttttt (16 bits)
+			// s = slot, c = crew status, p = card inserted, a = activity, t = time
 			byte b1=reader.ReadByte();
 			byte b2=reader.ReadByte();
 
-			slot=(byte) ((b1 & 0x80) >> 7);
-			// TODO: H: not sure why this is always returning zero (simple logic bug?)
-			status=(byte) ((b1 & 0x40));
-			inserted=(b1 & 0x20) == 0;
-			activity=(Activity) ((b1 & 0x18) >> 3);
-			time=(uint) (((b1 & 0x07) << 8) | b2);
+			slot     = (byte)     ((b1 >> 7) & 0x01);      // 7th bit
+			status   = (byte)     ((b1 >> 6) & 0x01);      // 6th bit
+			inserted =            ((b1 >> 5) & 0x01) == 0; // 5th bit
+			activity = (Activity) ((b1 >> 3) & 0x03);      // 4th and 3rd bits
+			time     = (((uint)b1 & 0x07) << 8) | b2;      // 0th, 1st, 2nd bits from b1
 
 			if ( this.LogLevel == LogLevel.DEBUG || this.LogLevel == LogLevel.INFO )
 			{
