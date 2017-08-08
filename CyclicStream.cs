@@ -22,7 +22,15 @@ namespace DataFileReader
 
 		public override int Read(byte[] buffer, int offset, int count)
 		{
+			if (count <= 0)
+			{
+				throw new ArgumentOutOfRangeException("Count must be positive!");
+			}
 			long currentPosition=Position;
+			if (currentPosition > length)
+			{
+				throw new EndOfStreamException("Trying to read after end position!");
+			}
 
 			if ( currentPosition + count <= length )
 				return baseStream.Read(buffer, offset, count);
