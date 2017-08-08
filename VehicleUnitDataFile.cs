@@ -4,7 +4,6 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Xml;
-using System.Xml.Serialization;
 using DataFileReader;
 
 namespace DataFileReader
@@ -18,10 +17,10 @@ namespace DataFileReader
 		public static DataFile Create()
 		{
 			// construct using embedded config
-			Assembly a = typeof(VehicleUnitDataFile).Assembly;
+			Assembly a = typeof(VehicleUnitDataFile).GetTypeInfo().Assembly;
 			string name = a.FullName.Split(',')[0]+".VehicleUnitData.config";
 			Stream stm = a.GetManifestResourceStream(name);
-			XmlTextReader xtr=new XmlTextReader(stm);
+			XmlReader xtr = XmlReader.Create(stm);
 
 			return Create(xtr);
 		}

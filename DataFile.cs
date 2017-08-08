@@ -26,21 +26,14 @@ namespace DataFileReader
 		// 
 		public static DataFile Create(string configFile)
 		{
-			XmlTextReader xtr=new XmlTextReader(configFile);
+			XmlReader xtr=XmlReader.Create(File.OpenRead(configFile));
 			return Create(xtr);
 		}
 
-		protected static DataFile Create(XmlTextReader xtr)
+		protected static DataFile Create(XmlReader xtr)
 		{
 			XmlSerializer xs=new XmlSerializer(typeof(DataFile));
-			try
-			{
-				return (DataFile) xs.Deserialize(xtr);
-			} 
-			finally
-			{
-				xtr.Close();
-			}
+			return (DataFile) xs.Deserialize(xtr);
 		}
 
 		/// Convenience method to open a file and process it
@@ -54,14 +47,7 @@ namespace DataFileReader
         public void Process(Stream s, XmlWriter writer)
         {
             CustomBinaryReader r = new CustomBinaryReader(s);
-            try
-            {
-                Process(r, writer);
-            }
-            finally
-            {
-                s.Close();
-            }
+            Process(r, writer);
         }
 
 		/// This is the core method overridden by all subclasses of Region

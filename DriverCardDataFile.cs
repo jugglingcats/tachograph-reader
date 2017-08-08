@@ -14,10 +14,10 @@ namespace DataFileReader
 		public static DataFile Create()
 		{
 			// construct using embedded config
-			Assembly a = typeof(DriverCardDataFile).Assembly;
+			Assembly a = typeof(DriverCardDataFile).GetTypeInfo().Assembly;
 			string name = a.FullName.Split(',')[0]+".DriverCardData.config";
 			Stream stm = a.GetManifestResourceStream(name);
-			XmlTextReader xtr=new XmlTextReader(stm);
+			XmlReader xtr = XmlReader.Create(stm);
 
 			return Create(xtr);
 		}
