@@ -666,6 +666,12 @@ namespace DataFileReader
 			byte byteValue=reader.ReadByte();
 			if ( byteValue < countries.Length )
 				countryName=countries[byteValue];
+			else if (byteValue == 0xFD)
+				countryName="European Community";
+			else if (byteValue == 0xFE)
+				countryName="Europe";
+			else if (byteValue == 0xFF)
+				countryName="World";
 			else
 				countryName="UNKNOWN";
 
