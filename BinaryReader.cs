@@ -73,5 +73,36 @@ namespace DataFileReader
 			// and convert to actual date time class
 			return new DateTime(absTicks);
 		}
+
+		public uint ReadBCDString(int lengthInBytes)
+		{
+			const byte frontMask = 0xF0;
+			const byte backMask = 0x0F;
+
+			if (lengthInBytes > 4)
+			{
+				throw new InvalidOperationException("Length too big");
+			}
+
+			byte[] octets = new byte[lengthInBytes];
+			int amountRead = Read(octets, 0, lengthInBytes);
+			if (amountRead != lengthInBytes)
+			{
+				throw new InvalidOperationException("End of file while reading a string");
+			}
+
+			uint result = 0;
+			for (int i = 0; i < lengthInBytes; ++i)
+			{
+				byte octet = octets[i];
+				int front = (octet & frontMask) >> 4;
+				int back = octet & backMask;
+				result *= 100;
+				result += (uint) (front * 10);
+				result += (uint) back;
+			}
+
+			return result;
+		}
 	}
 }

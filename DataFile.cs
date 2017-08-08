@@ -215,7 +215,7 @@ namespace DataFileReader
 			previousRecordLength=reader.ReadSInt16();
 			currentRecordLength=reader.ReadSInt16();
 			recordDate=reader.ReadTimeReal();
-			dailyPresenceCounter=reader.ReadSInt16();
+			dailyPresenceCounter=reader.ReadBCDString(2);
 			distance=reader.ReadSInt16();
 
 			writer.WriteAttributeString("DateTime", recordDate.ToString());
@@ -519,10 +519,13 @@ namespace DataFileReader
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
 			serialNumber=reader.ReadSInt32();
-			month=reader.ReadByte();
-			year=reader.ReadByte();
+			// BCD coding of Month (two digits) and Year (two last digits)
+			uint monthYear=reader.ReadBCDString(2);
 			type=reader.ReadByte();
 			manufacturerCode=reader.ReadByte();
+
+			month = (byte)(monthYear / 100);
+			year = (byte)(monthYear % 100);
 
 			writer.WriteAttributeString("Month", month.ToString());
 			writer.WriteAttributeString("Year", year.ToString());
@@ -564,18 +567,19 @@ namespace DataFileReader
 
         protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
         {
-            byte yy1=reader.ReadByte();
-            byte yy2 = reader.ReadByte();
-            byte mm = reader.ReadByte();
-            byte dd = reader.ReadByte();
+            uint year = reader.ReadBCDString(2);
+            uint month = reader.ReadBCDString(1);
+            uint day = reader.ReadBCDString(1);
 
-            int year = ((yy1 & 0xF0) >> 4) * 1000 + (yy1 & 0xF) * 100 + ((yy2 & 0xF0) >> 4) * 10 + (yy2 & 0xF);
-            int month = ((mm & 0xF0) >> 4) * 10 + (mm & 0xF);
-            int day = ((dd & 0xF0) >> 4) * 10 + (dd & 0xF);
+            string dateTimeString = null;
+            // year 0, month 0, day 0 means date isn't set
+            if (year > 0 || month > 0 || day > 0)
+            {
+                dateTime = new DateTime((int)year, (int)month, (int)day);
+                dateTimeString = dateTime.ToString();
+            }
 
-            dateTime = new DateTime(year, month, day);
-
-            writer.WriteAttributeString("Datef", dateTime.ToString());
+            writer.WriteAttributeString("Datef", dateTimeString);
         }
 
         public override string ToString()
