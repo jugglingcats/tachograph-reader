@@ -18,7 +18,7 @@ vudf.Process("file.ddd", writer);
 Most of the sections/features of both data file formats are catered for. It's possible to modify the data file formats using `DriverCardData.config` and `VehicleUnitData.config`. These are two XML files defining the structure of the data with features specific to the standard (such as cyclic buffer support).
 
 The standard is not particularly well written and it took quite a bit of work to decipher it. This project encapsulates that learning in a reasonably succint form, mainly in the XML config files. Some code comments refer to pages in the specification 
-[Contribution guidelines for this project](./1360_2002-Annex_1B-GB.pdf) which is available in this repository for convenience.
+[1360_2002-Annex_1B-GB.pdf](./1360_2002-Annex_1B-GB.pdf) which is available in this repository for convenience.
 
 It's amusing that the authors of the standard went to great pains to fit the data in the space available on the cards of the time... a very cheap USB stick would now hold a lifetime's worth of driver data!
 
