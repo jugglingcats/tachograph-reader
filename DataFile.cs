@@ -75,6 +75,8 @@ namespace DataFileReader
 			{
 				byte[] magic=new byte[2];
 				int bytesRead=reader.BaseStream.Read(magic, 0, 2);
+				long magicPos = reader.BaseStream.Position - 2;
+
 				if ( bytesRead == 0 )
 					// end of file - nothing more to read
 					break;
@@ -86,13 +88,21 @@ namespace DataFileReader
 
 				// test whether the magic matches one of our child objects
 				string magicString=string.Format("0x{0:X2}{1:X2}", magic[0], magic[1]);
+				bool matched = false;
 				foreach ( IdentifiedObjectRegion r in regions )
 				{
 					if ( r.Matches(magicString) )
 					{
 						r.Process(reader, writer);
-						break;						
+						matched = true;
+						break;
 					}
+				}
+
+				if (!matched)
+				{
+					WriteLine(LogLevel.WARN, "Unrecognized magic=0x{0:X2}{1:X2} at offset 0x{2:X4}  ", magic[0], magic[1], magicPos);
+					throw new NotImplementedException("Unrecognized magic " + magicString);
 				}
 			}
 		}
@@ -167,21 +177,37 @@ namespace DataFileReader
 	{
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
+			if (regionLength <= 4)
+			{
+				WriteLine(LogLevel.WARN, "CyclicalActivityRegion is empty!");
+				return;
+			}
+
 			uint oldest=reader.ReadSInt16();
 			uint newest=reader.ReadSInt16();
 
 			// length is length of region minus the bytes we've just read
 			long effectiveLength=regionLength - 4;
-
 			long position=reader.BaseStream.Position;
 
-			WriteLine(LogLevel.INFO, "Oldest {0:X4} (offset {2:X4}), newest {1:X4} (offset {3:X4})", 
+			if (position + effectiveLength > reader.BaseStream.Length)
+			{
+				WriteLine(LogLevel.WARN, "CyclicalActivityRegion position=0x{0:X4} + effectiveLength=0x{1:X4} > length=0x{2:X4} !", position, effectiveLength, reader.BaseStream.Length);
+				return;
+			}
+
+			WriteLine(LogLevel.INFO, "Oldest 0x{0:X4} (offset 0x{2:X4}), newest 0x{1:X4} (offset 0x{3:X4})",
 				position+oldest, position+newest,
 				oldest, newest);
 
 			if ( oldest == newest && oldest == 0 )
 				// no data in file
 				return;
+
+			if ( newest >= effectiveLength || oldest >= effectiveLength)
+			{
+				throw new IndexOutOfRangeException("Invalid pointer to CyclicalActivity Record");
+			}
 
 			CyclicStream cyclicStream=new CyclicStream(reader.BaseStream, reader.BaseStream.Position, effectiveLength);
 			CustomBinaryReader cyclicReader=new CustomBinaryReader(cyclicStream);
@@ -196,6 +222,10 @@ namespace DataFileReader
 					last=true;
 
 				base.ProcessInternal(cyclicReader, writer);
+				if (cyclicStream.Wrapped)
+				{
+					last = true;
+				}
 			}
 
 			writer.WriteElementString("DataBufferIsWrapped", cyclicStream.Wrapped.ToString());
@@ -293,7 +323,7 @@ namespace DataFileReader
 			if ( reader.BaseStream is CyclicStream )
 				endPosition=((CyclicStream) reader.BaseStream).ActualPosition;
 
-			WriteLine(LogLevel.DEBUG, "{0} [0x{1:X4}-0x{2:X4}/0x{3:X4}] {4}", Name, byteOffset, 
+			WriteLine(LogLevel.DEBUG, "{0} [0x{1:X4}-0x{2:X4}/0x{3:X4}] {4}", Name, byteOffset,
 				endPosition, endPosition-byteOffset, ToString());
 
 			if ( GlobalValue )
@@ -762,13 +792,21 @@ namespace DataFileReader
 
 		protected void ProcessItems(CustomBinaryReader reader, XmlWriter writer, uint count)
 		{
-			WriteLine(LogLevel.DEBUG, "Processing repeating {0}, count={1}", Name, count);
-	
+			WriteLine(LogLevel.DEBUG, "Processing repeating {0}, count={1}, offset=0x{2:X4}", Name, count, reader.BaseStream.Position);
+
 			// repeat processing of child objects
+			uint maxCount = count;
 			while ( count > 0 )
 			{
-				base.ProcessInternal(reader, writer);
-				count--;
+				try
+				{
+					base.ProcessInternal(reader, writer);
+					count--;
+				} catch (EndOfStreamException ex)
+				{
+					WriteLine(LogLevel.ERROR, "Repeating {0}, count={1}/{2}: {3}", Name, count, maxCount, ex);
+					break;
+				}
 			}
 		}
 
@@ -791,7 +829,13 @@ namespace DataFileReader
 			if ( Count == 0 && CountRef != null )
 			{
 				string refName=CountRef.Substring(1);
-				Count=uint.Parse((string) globalValues[refName]);
+				if (globalValues.Contains(refName))
+				{
+					Count=uint.Parse((string) globalValues[refName]);
+				} else
+				{
+					WriteLine(LogLevel.WARN, "RepeatingRegion {0} doesn't contain ref {1}", Name, refName);
+				}
 			}
 			ProcessItems(reader, writer, Count);
 		}
