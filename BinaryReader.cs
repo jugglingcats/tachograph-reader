@@ -58,6 +58,12 @@ namespace DataFileReader
 			if ( amountRead != length )
 				throw new InvalidOperationException("End of file while reading a string");
 
+			int nullPos = Array.IndexOf(buf, (byte)0x00);
+			if (nullPos >= 0 && nullPos < length)
+			{
+				Array.Resize(ref buf, nullPos);
+			}
+
 			char[] chars=enc.GetChars(buf);
 			return new string(chars);
 		}
