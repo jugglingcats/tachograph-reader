@@ -389,6 +389,7 @@ namespace DataFileReader
 		XmlElement("UInt24", typeof(UInt24Region)),
 		XmlElement("UInt16", typeof(UInt16Region)),
 		XmlElement("UInt8", typeof(UInt8Region)),
+		XmlElement("BCDString", typeof(BCDStringRegion)),
 		XmlElement("Country", typeof(CountryRegion)),
 		XmlElement("HexValue", typeof(HexValueRegion))]
 		public ArrayList Regions
@@ -734,6 +735,24 @@ namespace DataFileReader
 		public override string ToString()
 		{
 			return byteValue.ToString();
+		}
+	}
+
+	public class BCDStringRegion : Region
+	{
+		[XmlAttribute]
+		public int Size;
+		private uint value;
+
+		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		{
+			value=reader.ReadBCDString(Size);
+			writer.WriteString(value.ToString());
+		}
+
+		public override string ToString()
+		{
+			return value.ToString();
 		}
 	}
 
