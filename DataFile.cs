@@ -489,7 +489,7 @@ namespace DataFileReader
 				{
 					WriteLine(LogLevel.WARN, "Failed to work with codepage {0}, '{1}'", codepage, e.Message);
 				}
-			} else
+			} else if (codepage != 0) // 0 means no codepage since value isn't set
 			{
 				WriteLine(LogLevel.WARN, "Unknown codepage {0}", codepage);
 			}
@@ -730,8 +730,8 @@ namespace DataFileReader
 			else
 				countryName="UNKNOWN";
 
-			writer.WriteAttributeString("Code", HexValueRegion.ToHexString(new byte[] {byteValue}));
 			writer.WriteAttributeString("Name", countryName);
+			writer.WriteString(byteValue.ToString());
 		}
 
 		public override string ToString()
