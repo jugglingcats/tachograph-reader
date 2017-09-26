@@ -384,6 +384,7 @@ namespace DataFileReader
 		XmlElement("TimeReal", typeof(TimeRealRegion)),
         XmlElement("Datef", typeof(DatefRegion)),
         XmlElement("ActivityChange", typeof(ActivityChangeRegion)),
+		XmlElement("CardNumber", typeof(CardNumberRegion)),
 		XmlElement("FullCardNumber", typeof(FullCardNumberRegion)),
 		XmlElement("Flag", typeof(FlagRegion)),
 		XmlElement("UInt24", typeof(UInt24Region)),
@@ -629,29 +630,46 @@ namespace DataFileReader
 		// TODO: M: there are more
 	}
 
-	// see page 72 - we only support driver cards
-	public class FullCardNumberRegion : Region
+	public class CardNumberRegion : Region
 	{
-		EquipmentType type;
-		byte issuingMemberState;
-		string driverIdentification;
-		byte replacementIndex;
-		byte renewalIndex;
-		
+		protected string driverIdentification;
+		protected byte replacementIndex;
+		protected byte renewalIndex;
+
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
-			type=(EquipmentType) reader.ReadByte();
-			issuingMemberState=reader.ReadByte();
 			driverIdentification=reader.ReadString(14);
 			replacementIndex=reader.ReadByte();
 			renewalIndex=reader.ReadByte();
 
-			writer.WriteAttributeString("Type", type.ToString());
-			writer.WriteAttributeString("IssuingMemberState", issuingMemberState.ToString());
 			writer.WriteAttributeString("ReplacementIndex", replacementIndex.ToString());
 			writer.WriteAttributeString("RenewalIndex", renewalIndex.ToString());
 
 			writer.WriteString(driverIdentification);
+		}
+
+		public override string ToString()
+		{
+			return string.Format("{0}, {1}, {2}",
+				driverIdentification, replacementIndex, renewalIndex);
+		}
+	}
+
+	// see page 72 - we only support driver cards
+	public class FullCardNumberRegion : CardNumberRegion
+	{
+		EquipmentType type;
+		byte issuingMemberState;
+
+		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		{
+			type=(EquipmentType) reader.ReadByte();
+			issuingMemberState=reader.ReadByte();
+
+			writer.WriteAttributeString("Type", type.ToString());
+			writer.WriteAttributeString("IssuingMemberState", issuingMemberState.ToString());
+
+			base.ProcessInternal(reader, writer);
 		}
 
 		public override string ToString()
