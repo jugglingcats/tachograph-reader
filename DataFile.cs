@@ -384,11 +384,13 @@ namespace DataFileReader
 		XmlElement("TimeReal", typeof(TimeRealRegion)),
         XmlElement("Datef", typeof(DatefRegion)),
         XmlElement("ActivityChange", typeof(ActivityChangeRegion)),
+		XmlElement("CardNumber", typeof(CardNumberRegion)),
 		XmlElement("FullCardNumber", typeof(FullCardNumberRegion)),
 		XmlElement("Flag", typeof(FlagRegion)),
 		XmlElement("UInt24", typeof(UInt24Region)),
 		XmlElement("UInt16", typeof(UInt16Region)),
 		XmlElement("UInt8", typeof(UInt8Region)),
+		XmlElement("BCDString", typeof(BCDStringRegion)),
 		XmlElement("Country", typeof(CountryRegion)),
 		XmlElement("HexValue", typeof(HexValueRegion))]
 		public ArrayList Regions
@@ -487,7 +489,7 @@ namespace DataFileReader
 				{
 					WriteLine(LogLevel.WARN, "Failed to work with codepage {0}, '{1}'", codepage, e.Message);
 				}
-			} else
+			} else if (codepage != 0) // 0 means no codepage since value isn't set
 			{
 				WriteLine(LogLevel.WARN, "Unknown codepage {0}", codepage);
 			}
@@ -632,29 +634,46 @@ namespace DataFileReader
 		// TODO: M: there are more
 	}
 
-	// see page 72 - we only support driver cards
-	public class FullCardNumberRegion : Region
+	public class CardNumberRegion : Region
 	{
-		EquipmentType type;
-		byte issuingMemberState;
-		string driverIdentification;
-		byte replacementIndex;
-		byte renewalIndex;
-		
+		protected string driverIdentification;
+		protected byte replacementIndex;
+		protected byte renewalIndex;
+
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
-			type=(EquipmentType) reader.ReadByte();
-			issuingMemberState=reader.ReadByte();
 			driverIdentification=reader.ReadString(14);
 			replacementIndex=reader.ReadByte();
 			renewalIndex=reader.ReadByte();
 
-			writer.WriteAttributeString("Type", type.ToString());
-			writer.WriteAttributeString("IssuingMemberState", issuingMemberState.ToString());
 			writer.WriteAttributeString("ReplacementIndex", replacementIndex.ToString());
 			writer.WriteAttributeString("RenewalIndex", renewalIndex.ToString());
 
 			writer.WriteString(driverIdentification);
+		}
+
+		public override string ToString()
+		{
+			return string.Format("{0}, {1}, {2}",
+				driverIdentification, replacementIndex, renewalIndex);
+		}
+	}
+
+	// see page 72 - we only support driver cards
+	public class FullCardNumberRegion : CardNumberRegion
+	{
+		EquipmentType type;
+		byte issuingMemberState;
+
+		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		{
+			type=(EquipmentType) reader.ReadByte();
+			issuingMemberState=reader.ReadByte();
+
+			writer.WriteAttributeString("Type", type.ToString());
+			writer.WriteAttributeString("IssuingMemberState", issuingMemberState.ToString());
+
+			base.ProcessInternal(reader, writer);
 		}
 
 		public override string ToString()
@@ -715,8 +734,8 @@ namespace DataFileReader
 			else
 				countryName="UNKNOWN";
 
-			writer.WriteAttributeString("Code", HexValueRegion.ToHexString(new byte[] {byteValue}));
 			writer.WriteAttributeString("Name", countryName);
+			writer.WriteString(byteValue.ToString());
 		}
 
 		public override string ToString()
@@ -738,6 +757,24 @@ namespace DataFileReader
 		public override string ToString()
 		{
 			return byteValue.ToString();
+		}
+	}
+
+	public class BCDStringRegion : Region
+	{
+		[XmlAttribute]
+		public int Size;
+		private uint value;
+
+		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		{
+			value=reader.ReadBCDString(Size);
+			writer.WriteString(value.ToString());
+		}
+
+		public override string ToString()
+		{
+			return value.ToString();
 		}
 	}
 
