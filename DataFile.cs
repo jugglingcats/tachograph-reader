@@ -85,11 +85,13 @@ namespace DataFileReader
 					}
 				}
 
-				if (!matched)
-				{
-					WriteLine(LogLevel.WARN, "Unrecognized magic=0x{0:X2}{1:X2} at offset 0x{2:X4}  ", magic[0], magic[1], magicPos);
-					throw new NotImplementedException("Unrecognized magic " + magicString);
-				}
+// commenting @davispuh change because some files have unknown sections, so we take a brute
+// for approach and just skip over any unrecognised data
+				// if (!matched)
+				// {
+				// 	WriteLine(LogLevel.WARN, "Unrecognized magic=0x{0:X2}{1:X2} at offset 0x{2:X4}  ", magic[0], magic[1], magicPos);
+				// 	throw new NotImplementedException("Unrecognized magic " + magicString);
+				// }
 			}
 		}
 
@@ -208,10 +210,12 @@ namespace DataFileReader
 					last=true;
 
 				base.ProcessInternal(cyclicReader, writer);
-				if (cyclicStream.Wrapped)
-				{
-					last = true;
-				}
+				// commenting @davispuh mod because it can cause premature termination
+				// see https://github.com/jugglingcats/tachograph-reader/issues/28
+				// if (cyclicStream.Wrapped)
+				// {
+				// 	last = true;
+				// }
 			}
 
 			writer.WriteElementString("DataBufferIsWrapped", cyclicStream.Wrapped.ToString());
