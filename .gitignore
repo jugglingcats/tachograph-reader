@@ -1,5 +1,5 @@
 bin
 obj
-app.config
-DataFileReader.csproj
-DataFileReader.csproj.user
+data
+
+test.xml

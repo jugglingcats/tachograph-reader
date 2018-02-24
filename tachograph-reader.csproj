@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>EXE</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="DriverCardData.config" />
+    <Content Remove="VehicleUnitData.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="DriverCardData.config" />
+    <EmbeddedResource Include="VehicleUnitData.config" />
+  </ItemGroup>
+</Project>

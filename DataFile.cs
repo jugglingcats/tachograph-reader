@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -56,6 +57,7 @@ namespace DataFileReader
 		{
 			WriteLine(LogLevel.DEBUG, "Processing...");
 
+			var unmatchedRegions=0;
 			// in this case we read a magic and try to process it
 			while ( true )
 			{
@@ -79,12 +81,19 @@ namespace DataFileReader
 				{
 					if ( r.Matches(magicString) )
 					{
+						WriteLine(LogLevel.DEBUG, "Identified region: {0} with magic {1} at 0x{2:X4}", r.Name, magicString, magicPos);
 						r.Process(reader, writer);
 						matched = true;
 						break;
 					}
 				}
 
+				if ( !matched ) {
+					unmatchedRegions++;
+					if ( unmatchedRegions == 1 ) {
+						WriteLine(LogLevel.WARN, "First unrecognised region with magic {1} at 0x{1:X4}", magicString, magicPos);
+					}
+				}
 // commenting @davispuh change because some files have unknown sections, so we take a brute
 // for approach and just skip over any unrecognised data
 				// if (!matched)
@@ -93,6 +102,11 @@ namespace DataFileReader
 				// 	throw new NotImplementedException("Unrecognized magic " + magicString);
 				// }
 			}
+			if ( unmatchedRegions > 0 ) {
+				WriteLine(LogLevel.WARN, "There were {0} unmatched regions (magics) in the file.", unmatchedRegions);
+			}
+			WriteLine(LogLevel.DEBUG, "Processing done.");
+
 		}
 
 		/// This defines what children we can have from the XML config
@@ -184,7 +198,7 @@ namespace DataFileReader
 				return;
 			}
 
-			WriteLine(LogLevel.INFO, "Oldest 0x{0:X4} (offset 0x{2:X4}), newest 0x{1:X4} (offset 0x{3:X4})",
+			WriteLine(LogLevel.DEBUG, "Oldest 0x{0:X4} (offset 0x{2:X4}), newest 0x{1:X4} (offset 0x{3:X4})",
 				position+oldest, position+newest,
 				oldest, newest);
 
@@ -452,7 +466,15 @@ namespace DataFileReader
 	// TODO: H: the codepages in the data are not valid code pages for windows
 	public class CodePageStringRegion : SimpleStringRegion
 	{
-		private int codepage;
+		static Dictionary<string, Encoding> codepages=new Dictionary<string, Encoding>();
+
+		// private int codepage;
+
+		static CodePageStringRegion() {
+			foreach ( var i in Encoding.GetEncodings() ) {
+				codepages.Add(i.Name, i.GetEncoding());
+			}
+		}
 
 		public CodePageStringRegion()
 		{
@@ -465,23 +487,11 @@ namespace DataFileReader
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
 			// get the codepage
-			codepage=reader.ReadByte();
+			var codepage=reader.ReadByte();
 			// codePage specifies the part of the ISO/IEC 8859 used to code this string
-			Encoding enc=Encoding.ASCII;
-			if (codepage > 0 && codepage <= 16)
-			{
-				try
-				{
-					// when codepage=1 it is ISO-8859-1
-					enc=Encoding.GetEncoding("ISO-8859-" + codepage.ToString());
-				}
-				catch ( Exception e )
-				{
-					WriteLine(LogLevel.WARN, "Failed to work with codepage {0}, '{1}'", codepage, e.Message);
-				}
-			} else if (codepage != 0) // 0 means no codepage since value isn't set
-			{
-				WriteLine(LogLevel.WARN, "Unknown codepage {0}", codepage);
+			Encoding enc=codepages.GetValueOrDefault("ISO-8859-"+codepage.ToString(), null);
+			if ( enc == null ) {
+				enc=Encoding.ASCII;
 			}
 			// read string using encoding
 			base.ProcessInternal(reader, enc);
