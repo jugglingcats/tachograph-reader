@@ -15,6 +15,9 @@ Once you have a reader instance you can give it a binary file to read and an XML
 vudf.Process("file.ddd", writer);
 ```
 
+The project tachograph-reader.csproj is suitable for using with .NET Core and VScode, and contains a simple command line app. Run the command without args to scan ./data/vehicle and ./data/driver and process all files found.
+Run the command with --driver <driverfile> or --vehicle <vehiclefile> to process individual files. You can also specify an output filename for the resulting XML. Tasks are set up in VScode for running the command.
+
 Most of the sections/features of both data file formats are catered for. It's possible to modify the data file formats using `DriverCardData.config` and `VehicleUnitData.config`. These are two XML files defining the structure of the data with features specific to the standard (such as cyclic buffer support).
 
 The standard is not particularly well written and it took quite a bit of work to decipher it. This project encapsulates that learning in a reasonably succint form, mainly in the XML config files. Some code comments refer to pages in the specification 
