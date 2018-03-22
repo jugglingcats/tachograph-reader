@@ -252,7 +252,7 @@ namespace DataFileReader
 			dailyPresenceCounter=reader.ReadBCDString(2);
 			distance=reader.ReadSInt16();
 
-			writer.WriteAttributeString("DateTime", recordDate.ToString());
+			writer.WriteAttributeString("DateTime", recordDate.ToString("u"));
 			writer.WriteAttributeString("DailyPresenceCounter", dailyPresenceCounter.ToString());
 			writer.WriteAttributeString("Distance", distance.ToString());
 
@@ -641,7 +641,7 @@ namespace DataFileReader
 		{
 			dateTime=reader.ReadTimeReal();
 
-			writer.WriteAttributeString("DateTime", dateTime.ToString());
+			writer.WriteAttributeString("DateTime", dateTime.ToString("u"));
 		}
 
 		public override string ToString()
@@ -666,7 +666,7 @@ namespace DataFileReader
             if (year > 0 || month > 0 || day > 0)
             {
                 dateTime = new DateTime((int)year, (int)month, (int)day);
-                dateTimeString = dateTime.ToString();
+                dateTimeString = dateTime.ToString("u");
             }
 
             writer.WriteAttributeString("Datef", dateTimeString);
