@@ -232,6 +232,8 @@ namespace DataFileReader
 				// }
 			}
 
+			reader.BaseStream.Position = position + effectiveLength;
+
 			writer.WriteElementString("DataBufferIsWrapped", cyclicStream.Wrapped.ToString());
 		}
 	}
