@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tachograph-reader-lib", "src\tachograph-reader-lib.csproj", "{5A2FCA46-264F-4840-88C2-797515DD1CD0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tachograph-reader-core", "core\tachograph-reader-core.csproj", "{42DDC35B-C479-4DA7-9C91-69928290E1C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tachograph-reader-framework", "framework\tachograph-reader-framework.csproj", "{8C7D5806-C021-4999-8B3F-6E176020C2CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5A2FCA46-264F-4840-88C2-797515DD1CD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A2FCA46-264F-4840-88C2-797515DD1CD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A2FCA46-264F-4840-88C2-797515DD1CD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A2FCA46-264F-4840-88C2-797515DD1CD0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42DDC35B-C479-4DA7-9C91-69928290E1C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42DDC35B-C479-4DA7-9C91-69928290E1C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42DDC35B-C479-4DA7-9C91-69928290E1C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42DDC35B-C479-4DA7-9C91-69928290E1C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C7D5806-C021-4999-8B3F-6E176020C2CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C7D5806-C021-4999-8B3F-6E176020C2CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C7D5806-C021-4999-8B3F-6E176020C2CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C7D5806-C021-4999-8B3F-6E176020C2CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4F90B03B-1743-429F-8BEA-B5A469D00A32}
+	EndGlobalSection
+EndGlobal

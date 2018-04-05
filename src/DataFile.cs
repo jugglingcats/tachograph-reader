@@ -474,7 +474,8 @@ namespace DataFileReader
 
 		static CodePageStringRegion() {
 			foreach ( var i in Encoding.GetEncodings() ) {
-				encodingCache.Add(i.Name.ToUpper(), i.GetEncoding());
+				if (!encodingCache.ContainsKey(i.Name.ToUpper()))
+					encodingCache.Add(i.Name.ToUpper(), i.GetEncoding());
 			}
 
 			charsetMapping[0] = "ASCII";
@@ -517,15 +518,23 @@ namespace DataFileReader
 		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
 		{
 			// get the codepage
-			var codepage=reader.ReadByte();
+			var codepage = reader.ReadByte();
 			// codePage specifies the part of the ISO/IEC 8859 used to code this string
 
-			string encodingName = charsetMapping.GetValueOrDefault(codepage, "UNKNOWN");
-			Encoding enc=encodingCache.GetValueOrDefault(encodingName, null);
-			if ( enc == null) {
+			string encodingName = "UNKNOWN";
+			if (charsetMapping.ContainsKey(codepage)) {
+				encodingName = charsetMapping[codepage];
+			}
+
+			Encoding enc = null;
+			if (encodingCache.ContainsKey(encodingName)) {
+				enc = encodingCache[encodingName];
+			}
+
+			if (enc == null) {
 				// we want to warn if we didn't recognize codepage because using wrong codepage will cause use of wrong codepoints and thus incorrect data
 				WriteLine(LogLevel.WARN, "Unknown codepage {0}", codepage);
-				enc=Encoding.ASCII;
+				enc = Encoding.ASCII;
 			}
 
 			// read string using encoding
