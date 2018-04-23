@@ -10,26 +10,77 @@ namespace tachograph_reader
     {
         static void Main(string[] args)
         {
-            XmlWriterSettings settings = new XmlWriterSettings();
-            settings.Indent = true;
-            settings.IndentChars = "\t";
+            if (args.Length == 0)
+            {
+                ProcessDataDirs();
+                return;
+            }
 
-            FileStream fileStream_m = new FileStream("m_file.xml", FileMode.Create);
-            XmlWriter writer_m = XmlWriter.Create(fileStream_m, settings);
+            if (args.Length < 2)
+            {
+                Console.Error.WriteLine("Expected --driver <file> or --vehicle <file> [output file]");
+                return;
+            }
+
+            DataFile proc = null;
+            if (args[0] == "--driver")
+            {
+                proc = DriverCardDataFile.Create();
+            }
+
+            if (args[0] == "--vehicle")
+            {
+                proc = VehicleUnitDataFile.Create();
+            }
+
+            if (proc == null)
+            {
+                Console.Error.WriteLine("Expected --driver <file> or --vehicle <file> [output file]");
+                return;
+            }
 
 
-            DataFile vudf = VehicleUnitDataFile.Create();
+            proc.LogLevel = LogLevel.DEBUG;
+            var xtw = args.Length > 2 ? new XmlTextWriter(args[2], Encoding.UTF8) : new XmlTextWriter(Stream.Null, Encoding.UTF8);
+            try
+            {
+                xtw.Formatting = Formatting.Indented;
+                proc.Process(args[1], xtw);
+            }
+            finally
+            {
+                xtw.Close();
+            }
 
-            //dcdf.Process("samples/ddd/C_20170713_1355_P_MILOSEVIC_SRBSRB0000013490000.DDD", writer_c);
-            vudf.Process("C:/cygwin64/home/ales.ferlan/Development/samples/ddd/M_20170303_1354_WDB96340610122689_20161203_20170303.DDD", writer_m);
+        }
 
+        private static void ProcessDataDirs()
+        {
+            ProcessDataDir("driver", () => DriverCardDataFile.Create());
+            ProcessDataDir("vehicle", () => VehicleUnitDataFile.Create());
+        }
 
-            writer_m.Flush();
-            fileStream_m.Flush();
+        private static void ProcessDataDir(string type, Func<DataFile> factory)
+        {
+            var files = Directory.GetFiles("data/" + type);
+            foreach (var f in files)
+            {
+                var proc = factory();
+                ProcessFile(proc, f);
+            }
+        }
 
-            writer_m.Close();
-            fileStream_m.Close();
-
+        private static void ProcessFile(DataFile proc, string f)
+        {
+            var xtw = new XmlTextWriter(Stream.Null, Encoding.UTF8);
+            try
+            {
+                proc.Process(f, xtw);
+            }
+            finally
+            {
+                xtw.Close();
+            }
         }
     }
 }
