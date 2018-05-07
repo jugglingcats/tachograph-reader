@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tachograph-reader-lib", "standard\tachograph-reader-lib.csproj", "{5A2FCA46-264F-4840-88C2-797515DD1CD0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tachograph-reader-lib", "src\tachograph-reader-lib.csproj", "{5A2FCA46-264F-4840-88C2-797515DD1CD0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tachograph-reader-core", "core\tachograph-reader-core.csproj", "{42DDC35B-C479-4DA7-9C91-69928290E1C5}"
 EndProject

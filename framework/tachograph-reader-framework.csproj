@@ -49,7 +49,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\standard\tachograph-reader-lib.csproj">
+    <ProjectReference Include="..\src\tachograph-reader-lib.csproj">
       <Project>{5a2fca46-264f-4840-88c2-797515dd1cd0}</Project>
       <Name>tachograph-reader-lib</Name>
     </ProjectReference>

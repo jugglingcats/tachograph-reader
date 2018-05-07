@@ -12,6 +12,6 @@
     <Content Remove="VehicleUnitData.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\standard\tachograph-reader-lib.csproj" />
+    <ProjectReference Include="..\src\tachograph-reader-lib.csproj" />
   </ItemGroup>
 </Project>
