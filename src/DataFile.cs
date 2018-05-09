@@ -15,6 +15,8 @@ namespace DataFileReader
 	/// </summary>
 	public class DataFile : Region
 	{
+		public static bool StrictProcessing {get; set;} = false;
+
 		[XmlIgnore]
 		public ArrayList regions=new ArrayList();
 
@@ -80,9 +82,14 @@ namespace DataFileReader
 					break;
 
 				if ( bytesRead == 1 )
+				{
 					// this can happen if zipping over unmatched bytes at end of file - should handle better
-					//					throw new InvalidOperationException("Could only read one byte of identifier at end of stream");
+					if (DataFile.StrictProcessing)
+					{
+						throw new InvalidOperationException("Could only read one byte of identifier at end of stream");
+					}
 					break;
+				}
 
 				// test whether the magic matches one of our child objects
 				string magicString=string.Format("0x{0:X2}{1:X2}", magic[0], magic[1]);
@@ -106,13 +113,12 @@ namespace DataFileReader
 						WriteLine(LogLevel.WARN, "First unrecognised region with magic {1} at 0x{1:X4}", magicString, magicPos);
 					}
 				}
-				// commenting @davispuh change because some files have unknown sections, so we take a brute
-				// for approach and just skip over any unrecognised data
-				// if (!matched)
-				// {
-				// 	WriteLine(LogLevel.WARN, "Unrecognized magic=0x{0:X2}{1:X2} at offset 0x{2:X4}  ", magic[0], magic[1], magicPos);
-				// 	throw new NotImplementedException("Unrecognized magic " + magicString);
-				// }
+
+				if (!matched && DataFile.StrictProcessing)
+				{
+					WriteLine(LogLevel.WARN, "Unrecognized magic=0x{0:X2}{1:X2} at offset 0x{2:X4}  ", magic[0], magic[1], magicPos);
+					throw new NotImplementedException("Unrecognized magic " + magicString);
+				}
 			}
 			if ( unmatchedRegions > 0 ) {
 				WriteLine(LogLevel.WARN, "There were {0} unmatched regions (magics) in the file.", unmatchedRegions);

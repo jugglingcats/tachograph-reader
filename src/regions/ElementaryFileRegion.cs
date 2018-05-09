@@ -32,6 +32,12 @@ namespace DataFileReader
 			regionLength=reader.ReadSInt16();
 			long fileLength=regionLength;
 
+			long start=reader.BaseStream.Position;
+			if (DataFile.StrictProcessing && start + regionLength > reader.BaseStream.Length)
+			{
+				throw new InvalidOperationException(string.Format("{0}: Would try to read more than length of stream! Position 0x{1:X4} + RegionLength 0x{2:X4} > Length 0x{3:X4}", Name, start, regionLength, reader.BaseStream.Length));
+			}
+
 			if ( type == 0x01 )
 			{
 				// this is just the signature
@@ -47,8 +53,6 @@ namespace DataFileReader
 			}
 			else
 			{
-				long start=reader.BaseStream.Position;
-
 				base.ProcessInternal(reader);
 
 				long amountProcessed=reader.BaseStream.Position-start;
@@ -61,6 +65,16 @@ namespace DataFileReader
 				{
 					Validator.SetCACertificate(this);
 				};
+			}
+
+			if (DataFile.StrictProcessing && fileLength != 0)
+			{
+				throw new InvalidOperationException(string.Format("{0}: Read wrong number of bytes! Position 0x{1:X4} and end of region 0x{2:X4} but bytes left 0x{3:X4}", Name, reader.BaseStream.Position, start + regionLength, fileLength));
+			}
+
+			if (DataFile.StrictProcessing && reader.BaseStream.Position > start + regionLength)
+			{
+				throw new InvalidOperationException(string.Format("{0}: Read past end of region! Position 0x{1:X4} > end of region 0x{2:X4}", Name, reader.BaseStream.Position, start + regionLength));
 			}
 
 			if ( fileLength > 0 )
