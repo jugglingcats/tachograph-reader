@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\app\*.cs" />
     <Content Remove="DriverCardData.config" />
     <Content Remove="VehicleUnitData.config" />
   </ItemGroup>
