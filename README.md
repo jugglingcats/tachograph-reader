@@ -2,6 +2,8 @@
 
 This is a C# project I worked on with my late Godfather, James "Walter" Boyle. He wrote some sophisticated software to handle analogue tachographs and report on working hours, compliance to speed limits, etc, and needed to add support for the digital tachograph system that was introduced in around 2002 (EEC 3821/85).
 
+### Usage
+
 Usage is quite simple. There is a main class DataFileReader and two subclasses: VehicleUnitDataFile and DriverCardDataFile. You can create an instance of one of the sublasses using the following methods:
 
 ```c#
@@ -23,6 +25,17 @@ var transferDataOverview = (IdentifiedObjectRegion)vudf.ProcessedRegions.Where(r
 var vehicleIdentificationNumber = transferDataOverview.ProcessedRegions["VehicleIdentificationNumber"];
 ```
 
+#### Signature Validation
+
+By default signature validation is disabled, to enable:
+
+```c#
+Validator.ValidateSignatures = true;
+```
+
+Now when processing file if there will any issue with validating signed data `InvalidSignatureException` will be thrown.
+
+### About project
 
 The project tachograph-reader.csproj is suitable for using with .NET Core and VScode, and contains a simple command line app. Run the command without args to scan ./data/vehicle and ./data/driver and process all files found.
 Run the command with --driver <driverfile> or --vehicle <vehiclefile> to process individual files. You can also specify an output filename for the resulting XML. Tasks are set up in VScode for running the command.

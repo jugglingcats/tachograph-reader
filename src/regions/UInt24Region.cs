@@ -19,6 +19,11 @@ namespace DataFileReader
 			return uintValue.ToString();
 		}
 
+		public uint ToUInt()
+		{
+			return this.uintValue;
+		}
+
 		protected override void InternalToXML(XmlWriter writer)
 		{
 			writer.WriteString(this.ToString());

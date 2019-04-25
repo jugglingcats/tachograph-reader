@@ -18,6 +18,11 @@ namespace DataFileReader
 			return byteValue.ToString();
 		}
 
+		public byte ToByte()
+		{
+			return this.byteValue;
+		}
+
 		protected override void InternalToXML(XmlWriter writer)
 		{
 			writer.WriteString(this.ToString());

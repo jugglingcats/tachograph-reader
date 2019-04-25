@@ -26,6 +26,11 @@ namespace DataFileReader
 				r.Process(reader);
 				this.ProcessedRegions.Add(r.Name, r);
 			}
+
+			if (this.Name == "VuCertificate")
+			{
+				SignatureRegion.signedDataOffsetBegin = reader.BaseStream.Position;
+			}
 		}
 
 		// these are the valid regions this class can contain, along with XML name mappings
@@ -50,7 +55,8 @@ namespace DataFileReader
 		XmlElement("UInt8", typeof(UInt8Region)),
 		XmlElement("BCDString", typeof(BCDStringRegion)),
 		XmlElement("Country", typeof(CountryRegion)),
-		XmlElement("HexValue", typeof(HexValueRegion))]
+		XmlElement("HexValue", typeof(HexValueRegion)),
+		XmlElement("Signature", typeof(SignatureRegion))]
 		public ArrayList Regions
 		{
 			get { return regions; }

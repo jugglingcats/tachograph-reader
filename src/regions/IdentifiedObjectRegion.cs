@@ -16,5 +16,14 @@ namespace DataFileReader
 			// (allows provision of a catch all region which is only really useful during development)
 			return Identifier == null || Identifier.Length == 0 || s.Equals(Identifier);
 		}
+
+		protected override void ProcessInternal(CustomBinaryReader reader)
+		{
+			SignatureRegion.signedDataOffsetBegin = reader.BaseStream.Position;
+
+			base.ProcessInternal(reader);
+
+			SignatureRegion.signedDataOffsetEnd = reader.BaseStream.Position;
+		}
 	}
 }
