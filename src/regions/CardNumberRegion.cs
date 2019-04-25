@@ -10,22 +10,25 @@ namespace DataFileReader
 		protected byte replacementIndex;
 		protected byte renewalIndex;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			driverIdentification=reader.ReadString(14);
 			replacementIndex=reader.ReadByte();
 			renewalIndex=reader.ReadByte();
-
-			writer.WriteAttributeString("ReplacementIndex", replacementIndex.ToString());
-			writer.WriteAttributeString("RenewalIndex", renewalIndex.ToString());
-
-			writer.WriteString(driverIdentification);
 		}
 
 		public override string ToString()
 		{
 			return string.Format("{0}, {1}, {2}",
 				driverIdentification, replacementIndex, renewalIndex);
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteAttributeString("ReplacementIndex", replacementIndex.ToString());
+			writer.WriteAttributeString("RenewalIndex", renewalIndex.ToString());
+
+			writer.WriteString(driverIdentification);
 		}
 	}
 }

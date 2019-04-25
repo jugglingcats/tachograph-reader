@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
@@ -8,7 +9,13 @@ namespace DataFileReader
 {
 	public class CyclicalActivityRegion : ContainerRegion
 	{
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		[XmlIgnore]
+		public bool DataBufferIsWrapped {get; private set;} = false;
+
+		[XmlIgnore]
+		public new List<Region> ProcessedRegions {get; private set;} = new List<Region>();
+
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			if (regionLength <= 4)
 			{
@@ -54,7 +61,14 @@ namespace DataFileReader
 				if ( pos == newest )
 					last=true;
 
-				base.ProcessInternal(cyclicReader, writer);
+				foreach ( Region r in regions )
+				{
+					var newRegion = r.Copy();
+					newRegion.RegionLength=regionLength;
+					newRegion.Process(cyclicReader);
+					this.ProcessedRegions.Add(newRegion);
+				}
+				this.DataBufferIsWrapped = cyclicStream.Wrapped;
 				// commenting @davispuh mod because it can cause premature termination
 				// see https://github.com/jugglingcats/tachograph-reader/issues/28
 				// if (cyclicStream.Wrapped)
@@ -64,8 +78,16 @@ namespace DataFileReader
 			}
 
 			reader.BaseStream.Position = position + effectiveLength;
+		}
 
-			writer.WriteElementString("DataBufferIsWrapped", cyclicStream.Wrapped.ToString());
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			foreach (var region in this.ProcessedRegions)
+			{
+				region.ToXML(writer);
+			};
+
+			writer.WriteElementString("DataBufferIsWrapped", this.DataBufferIsWrapped.ToString());
 		}
 	}
 }

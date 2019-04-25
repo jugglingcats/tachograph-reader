@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Serialization;
 using DataFileReader;
@@ -10,15 +11,20 @@ namespace DataFileReader
 	/// where this is indicated in the specification
 	public class ContainerRegion : Region
 	{
+		[XmlIgnore]
 		public ArrayList regions=new ArrayList();
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		[XmlIgnore]
+		public Dictionary<string, Region> ProcessedRegions {get; private set;} = new Dictionary<string, Region>();
+
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			// iterate over all child regions and process them
 			foreach ( Region r in regions )
 			{
 				r.RegionLength=regionLength;
-				r.Process(reader, writer);
+				r.Process(reader);
+				this.ProcessedRegions.Add(r.Name, r);
 			}
 		}
 
@@ -49,6 +55,14 @@ namespace DataFileReader
 		{
 			get { return regions; }
 			set { regions = value; }
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			foreach (var region in this.ProcessedRegions.Values)
+			{
+				region.ToXML(writer);
+			};
 		}
 	}
 }

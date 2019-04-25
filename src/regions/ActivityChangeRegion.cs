@@ -22,7 +22,9 @@ namespace DataFileReader
 		Activity activity;
 		uint time;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		long position;
+
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			// format: scpaattt tttttttt (16 bits)
 			// s = slot, c = crew status, p = card inserted, a = activity, t = time
@@ -37,23 +39,29 @@ namespace DataFileReader
 
 			if ( this.LogLevel == LogLevel.DEBUG || this.LogLevel == LogLevel.INFO )
 			{
-				long position=reader.BaseStream.Position;
+				this.position=reader.BaseStream.Position;
 				if ( reader.BaseStream is CyclicStream )
-					position=((CyclicStream) reader.BaseStream).ActualPosition;
-
-				writer.WriteAttributeString("FileOffset", string.Format("0x{0:X4}", position));
+					this.position=((CyclicStream) reader.BaseStream).ActualPosition;
 			}
-			writer.WriteAttributeString("Slot", slot.ToString());
-			writer.WriteAttributeString("Status", status.ToString());
-			writer.WriteAttributeString("Inserted", inserted.ToString());
-			writer.WriteAttributeString("Activity", activity.ToString());
-			writer.WriteAttributeString("Time", string.Format("{0:d2}:{1:d2}", time / 60, time % 60));
 		}
 
 		public override string ToString()
 		{
 			return string.Format("slot={0}, status={1}, inserted={2}, activity={3}, time={4:d2}:{5:d2}",
 				slot, status, inserted, activity, time / 60, time % 60);
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			if ( this.LogLevel == LogLevel.DEBUG || this.LogLevel == LogLevel.INFO )
+			{
+				writer.WriteAttributeString("FileOffset", string.Format("0x{0:X4}", this.position));
+			}
+			writer.WriteAttributeString("Slot", slot.ToString());
+			writer.WriteAttributeString("Status", status.ToString());
+			writer.WriteAttributeString("Inserted", inserted.ToString());
+			writer.WriteAttributeString("Activity", activity.ToString());
+			writer.WriteAttributeString("Time", string.Format("{0:d2}:{1:d2}", time / 60, time % 60));
 		}
 
 	}

@@ -7,10 +7,11 @@ namespace DataFileReader
 	public class CountryRegion : Region
 	{
 		private string countryName;
+		private byte byteValue;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
-			byte byteValue=reader.ReadByte();
+			this.byteValue = reader.ReadByte();
 			if ( byteValue < countries.Length )
 				countryName=countries[byteValue];
 			else if (byteValue == 0xFD)
@@ -21,14 +22,17 @@ namespace DataFileReader
 				countryName="World";
 			else
 				countryName="UNKNOWN";
-
-			writer.WriteAttributeString("Name", countryName);
-			writer.WriteString(byteValue.ToString());
 		}
 
 		public override string ToString()
 		{
 			return countryName;
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteAttributeString("Name", this.ToString());
+			writer.WriteString(this.byteValue.ToString());
 		}
 	}
 }

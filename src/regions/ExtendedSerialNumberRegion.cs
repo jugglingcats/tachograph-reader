@@ -14,7 +14,7 @@ namespace DataFileReader
 		private byte type;
 		private byte manufacturerCode;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			serialNumber=reader.ReadSInt32();
 			// BCD coding of Month (two digits) and Year (two last digits)
@@ -24,19 +24,22 @@ namespace DataFileReader
 
 			month = (byte)(monthYear / 100);
 			year = (byte)(monthYear % 100);
-
-			writer.WriteAttributeString("Month", month.ToString());
-			writer.WriteAttributeString("Year", year.ToString());
-			writer.WriteAttributeString("Type", type.ToString());
-			writer.WriteAttributeString("ManufacturerCode", manufacturerCode.ToString());
-
-			writer.WriteString(serialNumber.ToString());
 		}
 
 		public override string ToString()
 		{
 			return string.Format("{0}, {1}/{2}, type={3}, manuf code={4}",
 				serialNumber, month, year, type, manufacturerCode);
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteAttributeString("Month", month.ToString());
+			writer.WriteAttributeString("Year", year.ToString());
+			writer.WriteAttributeString("Type", type.ToString());
+			writer.WriteAttributeString("ManufacturerCode", manufacturerCode.ToString());
+
+			writer.WriteString(serialNumber.ToString());
 		}
 	}
 }

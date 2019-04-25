@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
@@ -21,7 +22,10 @@ namespace DataFileReader
 		[XmlAttribute]
 		public SizeAllocation SizeAlloc=SizeAllocation.BYTE;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		[XmlIgnore]
+		public new List<Region> ProcessedRegions {get; private set;} = new List<Region>();
+
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			// get the count according to allocation size
 			uint count;
@@ -39,20 +43,27 @@ namespace DataFileReader
 					throw new InvalidOperationException("Bad size allocation");
 			}
 
-			ProcessItems(reader, writer, count);
+			ProcessItems(reader, count);
 		}
 
-		protected void ProcessItems(CustomBinaryReader reader, XmlWriter writer, uint count)
+		protected void ProcessItems(CustomBinaryReader reader, uint count)
 		{
 			WriteLine(LogLevel.DEBUG, "Processing repeating {0}, count={1}, offset=0x{2:X4}", Name, count, reader.BaseStream.Position);
 
 			// repeat processing of child objects
 			uint maxCount = count;
+			this.ProcessedRegions.Capacity = (int)maxCount;
 			while ( count > 0 )
 			{
 				try
 				{
-					base.ProcessInternal(reader, writer);
+					foreach ( Region r in regions )
+					{
+						var newRegion = r.Copy();
+						newRegion.RegionLength = regionLength;
+						newRegion.Process(reader);
+						this.ProcessedRegions.Add(newRegion);
+					}
 					count--;
 				} catch (EndOfStreamException ex)
 				{
@@ -65,6 +76,14 @@ namespace DataFileReader
 		public override string ToString()
 		{
 			return string.Format("<< end {0}", Name);
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			foreach (var region in this.ProcessedRegions)
+			{
+				region.ToXML(writer);
+			};
 		}
 	}
 }
