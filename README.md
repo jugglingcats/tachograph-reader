@@ -15,6 +15,15 @@ Once you have a reader instance you can give it a binary file to read and an XML
 vudf.Process("file.ddd", writer);
 ```
 
+Or alternativly you can work with proccessed regions directly, like
+
+```c#
+vudf.Process(ddd);
+var transferDataOverview = (IdentifiedObjectRegion)vudf.ProcessedRegions.Where(r => r.Name == "TransferDataOverview").First();
+var vehicleIdentificationNumber = transferDataOverview.ProcessedRegions["VehicleIdentificationNumber"];
+```
+
+
 The project tachograph-reader.csproj is suitable for using with .NET Core and VScode, and contains a simple command line app. Run the command without args to scan ./data/vehicle and ./data/driver and process all files found.
 Run the command with --driver <driverfile> or --vehicle <vehiclefile> to process individual files. You can also specify an output filename for the resulting XML. Tasks are set up in VScode for running the command.
 
