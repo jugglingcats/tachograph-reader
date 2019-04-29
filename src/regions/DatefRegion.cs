@@ -9,26 +9,32 @@ namespace DataFileReader
 	{
 		private DateTime dateTime;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			uint year = reader.ReadBCDString(2);
 			uint month = reader.ReadBCDString(1);
 			uint day = reader.ReadBCDString(1);
 
-			string dateTimeString = null;
 			// year 0, month 0, day 0 means date isn't set
 			if (year > 0 || month > 0 || day > 0)
 			{
 				dateTime = new DateTime((int)year, (int)month, (int)day);
-				dateTimeString = dateTime.ToString("u");
 			}
-
-			writer.WriteAttributeString("Datef", dateTimeString);
 		}
 
 		public override string ToString()
 		{
 			return string.Format("{0}", dateTime);
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			string dateTimeString = null;
+			if (this.dateTime != null)
+			{
+				dateTimeString = this.dateTime.ToString("u");
+			};
+			writer.WriteAttributeString("Datef", dateTimeString);
 		}
 	}
 }

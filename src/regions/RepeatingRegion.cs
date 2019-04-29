@@ -13,7 +13,7 @@ namespace DataFileReader
 		[XmlAttribute]
 		public string CountRef;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			if ( Count == 0 && CountRef != null )
 			{
@@ -26,7 +26,7 @@ namespace DataFileReader
 					WriteLine(LogLevel.WARN, "RepeatingRegion {0} doesn't contain ref {1}", Name, refName);
 				}
 			}
-			ProcessItems(reader, writer, Count);
+			ProcessItems(reader, Count);
 		}
 	}
 }

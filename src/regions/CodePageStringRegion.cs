@@ -57,7 +57,7 @@ namespace DataFileReader
 		{
 		}
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			// get the codepage
 			var codepage = reader.ReadByte();
@@ -81,7 +81,6 @@ namespace DataFileReader
 
 			// read string using encoding
 			base.ProcessInternal(reader, enc);
-			writer.WriteString(text);
 		}
 	}
 }

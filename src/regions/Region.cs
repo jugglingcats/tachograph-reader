@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using DataFileReader;
@@ -42,23 +43,31 @@ namespace DataFileReader
 			"Russian Federation","Sweden","Slovakia","Slovenia","Turkmenistan","Turkey","Ukraine","Vatican City",
 			"Yugoslavia"};
 
-		public void Process(CustomBinaryReader reader, XmlWriter writer)
+		protected bool ShouldSuppressElement {get; private set;} = false;
+
+		public virtual Region Copy()
+		{
+			Region region = null;
+			XmlSerializer xmlSerializer = new XmlSerializer(this.GetType());
+			using (Stream stream = new MemoryStream())
+			{
+				xmlSerializer.Serialize(stream, this);
+				stream.Position = 0;
+				region = (Region)xmlSerializer.Deserialize(stream);
+			};
+			return region;
+		}
+
+		public void Process(CustomBinaryReader reader)
 		{
 			// Store start of region (for logging only)
 			byteOffset=reader.BaseStream.Position;
 
-			bool suppress=SuppressElement(reader);
-
-			// Write a new output element
-			if ( !suppress )
-				writer.WriteStartElement(Name);
+			this.ShouldSuppressElement = SuppressElement(reader);
 
 			// Call subclass process method
-			ProcessInternal(reader, writer);
+			ProcessInternal(reader);
 
-			// End the element
-			if ( !suppress )
-				writer.WriteEndElement();
 
 			long endPosition=reader.BaseStream.Position;
 			if ( reader.BaseStream is CyclicStream )
@@ -79,7 +88,7 @@ namespace DataFileReader
 				Console.WriteLine(format, args);
 		}
 
-		protected abstract void ProcessInternal(CustomBinaryReader reader, XmlWriter writer);
+		protected abstract void ProcessInternal(CustomBinaryReader reader);
 
 		protected virtual bool SuppressElement(CustomBinaryReader reader)
 		{
@@ -93,5 +102,19 @@ namespace DataFileReader
 		{
 			set { regionLength=value; }
 		}
+
+		public void ToXML(XmlWriter writer)
+		{
+			if (this.ShouldSuppressElement)
+				return;
+
+			writer.WriteStartElement(this.Name);
+
+			this.InternalToXML(writer);
+
+			writer.WriteEndElement();
+		}
+
+		protected abstract void InternalToXML(XmlWriter writer);
 	}
 }

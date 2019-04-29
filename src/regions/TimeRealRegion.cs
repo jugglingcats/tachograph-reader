@@ -9,16 +9,19 @@ namespace DataFileReader
 	{
 		private DateTime dateTime;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			dateTime=reader.ReadTimeReal();
-
-			writer.WriteAttributeString("DateTime", dateTime.ToString("u"));
 		}
 
 		public override string ToString()
 		{
 			return string.Format("{0}", dateTime);
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteAttributeString("DateTime", dateTime.ToString("u"));
 		}
 	}
 }

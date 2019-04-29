@@ -12,14 +12,12 @@ namespace DataFileReader
 		public int Length;
 		private byte[] values;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			values=new byte[Length];
 
 			for ( int n=0; n< Length; n++ )
 				values[n]=reader.ReadByte();
-
-			writer.WriteAttributeString("Value", this.ToString());
 		}
 
 		public override string ToString()
@@ -38,6 +36,11 @@ namespace DataFileReader
 				sb.AppendFormat("{0:X2}", b);
 
 			return sb.ToString();
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteAttributeString("Value", this.ToString());
 		}
 
 	}

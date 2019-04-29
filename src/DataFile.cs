@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
@@ -14,7 +15,11 @@ namespace DataFileReader
 	/// </summary>
 	public class DataFile : Region
 	{
+		[XmlIgnore]
 		public ArrayList regions=new ArrayList();
+
+		[XmlIgnore]
+		public List<Region> ProcessedRegions {get; private set;} = new List<Region>();
 
 		/// <summary>
 		/// This method loads the XML config file into a new instance
@@ -43,15 +48,21 @@ namespace DataFileReader
 			Process(s, writer);
 		}
 
-		public void Process(Stream s, XmlWriter writer)
+		public void Process(Stream s)
 		{
 			CustomBinaryReader r = new CustomBinaryReader(s);
-			Process(r, writer);
+			Process(r);
+		}
+
+		public void Process(Stream s, XmlWriter writer)
+		{
+			this.Process(s);
+			this.ToXML(writer);
 		}
 
 		/// This is the core method overridden by all subclasses of Region
 		// TODO: M: very inefficient if no matches found - will iterate over WORDs to end of file
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			WriteLine(LogLevel.DEBUG, "Processing...");
 
@@ -80,7 +91,9 @@ namespace DataFileReader
 					if ( r.Matches(magicString) )
 					{
 						WriteLine(LogLevel.DEBUG, "Identified region: {0} with magic {1} at 0x{2:X4}", r.Name, magicString, magicPos);
-						r.Process(reader, writer);
+						var newRegion = r.Copy();
+						newRegion.Process(reader);
+						this.ProcessedRegions.Add(newRegion);
 						matched = true;
 						break;
 					}
@@ -115,6 +128,13 @@ namespace DataFileReader
 			get { return regions; }
 			set { regions = value; }
 		}
-	}
 
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			foreach (var region in this.ProcessedRegions)
+			{
+				region.ToXML(writer);
+			};
+		}
+	}
 }

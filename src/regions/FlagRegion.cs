@@ -9,15 +9,19 @@ namespace DataFileReader
 	{
 		private bool boolValue;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			boolValue=reader.ReadByte() > 0;
-			writer.WriteString(boolValue.ToString());
 		}
 
 		public override string ToString()
 		{
 			return boolValue.ToString();
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteString(this.ToString());
 		}
 	}
 }

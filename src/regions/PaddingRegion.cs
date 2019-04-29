@@ -11,7 +11,7 @@ namespace DataFileReader
 		[XmlAttribute]
 		public int Size;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			byte[] buf=new byte[Size];
 			int amountRead=reader.Read(buf, 0, Size);
@@ -24,5 +24,9 @@ namespace DataFileReader
 			return string.Format("{0} bytes (0x{0:X4})", Size);
 		}
 
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteAttributeString("Size", this.Size.ToString());
+		}
 	}
 }

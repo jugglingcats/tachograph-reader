@@ -29,11 +29,10 @@ namespace DataFileReader
 			text=s.ReadString(Length, enc).Trim();
 		}
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			// we just use the default encoding in the default case
 			this.ProcessInternal(reader, Encoding.ASCII);
-			writer.WriteString(text);
 		}
 
 		public override string ToString()
@@ -41,5 +40,9 @@ namespace DataFileReader
 			return text;
 		}
 
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteString(this.ToString());
+		}
 	}
 }

@@ -11,15 +11,19 @@ namespace DataFileReader
 		public int Size;
 		private uint value;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			value=reader.ReadBCDString(Size);
-			writer.WriteString(value.ToString());
 		}
 
 		public override string ToString()
 		{
 			return value.ToString();
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteString(value.ToString());
 		}
 	}
 }

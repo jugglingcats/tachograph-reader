@@ -8,15 +8,19 @@ namespace DataFileReader
 	{
 		private uint uintValue;
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			uintValue=reader.ReadSInt16();
-			writer.WriteString(uintValue.ToString());
 		}
 
 		public override string ToString()
 		{
 			return uintValue.ToString();
+		}
+
+		protected override void InternalToXML(XmlWriter writer)
+		{
+			writer.WriteString(this.ToString());
 		}
 	}
 }

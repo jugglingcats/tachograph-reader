@@ -13,7 +13,7 @@ namespace DataFileReader
 			return type == 0x01;
 		}
 
-		protected override void ProcessInternal(CustomBinaryReader reader, XmlWriter writer)
+		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			// read the type
 			byte type=reader.ReadByte();
@@ -29,7 +29,7 @@ namespace DataFileReader
 			{
 				long start=reader.BaseStream.Position;
 
-				base.ProcessInternal(reader, writer);
+				base.ProcessInternal(reader);
 
 				long amountProcessed=reader.BaseStream.Position-start;
 				fileLength -= amountProcessed;
