@@ -7,10 +7,21 @@ namespace DataFileReader
 {
 	public class ElementaryFileRegion : IdentifiedObjectRegion
 	{
-		protected override bool SuppressElement(CustomBinaryReader reader)
+		[XmlAttribute]
+		public bool Unsigned = false;
+
+		[XmlIgnore]
+		public byte[] signature {get; private set;} = null;
+
+		public bool IsSignature(CustomBinaryReader reader)
 		{
 			int type=reader.PeekChar();
 			return type == 0x01;
+		}
+
+		protected override bool SuppressElement(CustomBinaryReader reader)
+		{
+			return this.IsSignature(reader);
 		}
 
 		protected override void ProcessInternal(CustomBinaryReader reader)
@@ -24,6 +35,15 @@ namespace DataFileReader
 			if ( type == 0x01 )
 			{
 				// this is just the signature
+				this.signature = reader.ReadBytes((int)fileLength);
+				fileLength = 0;
+
+				long currentOffset = reader.BaseStream.Position;
+
+				reader.BaseStream.Position = SignatureRegion.signedDataOffsetBegin;
+				Validator.ValidateDelayedGen1(reader.ReadBytes(SignatureRegion.GetSignedDataLength()), this.signature);
+
+				reader.BaseStream.Position = currentOffset;
 			}
 			else
 			{
@@ -33,6 +53,14 @@ namespace DataFileReader
 
 				long amountProcessed=reader.BaseStream.Position-start;
 				fileLength -= amountProcessed;
+
+				if (this.Name == "CardCertificate")
+				{
+					Validator.SetCertificate(this);
+				} else if (this.Name == "CACertificate")
+				{
+					Validator.SetCACertificate(this);
+				};
 			}
 
 			if ( fileLength > 0 )

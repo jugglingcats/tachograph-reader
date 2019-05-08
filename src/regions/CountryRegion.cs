@@ -29,6 +29,11 @@ namespace DataFileReader
 			return countryName;
 		}
 
+		public byte GetId()
+		{
+			return this.byteValue;
+		}
+
 		protected override void InternalToXML(XmlWriter writer)
 		{
 			writer.WriteAttributeString("Name", this.ToString());

@@ -28,6 +28,11 @@ namespace DataFileReader
 			return ToHexString(values);
 		}
 
+		public byte[] ToBytes()
+		{
+			return this.values;
+		}
+
 		public static string ToHexString(byte[] values)
 		{
 			StringBuilder sb=new StringBuilder(values.Length*2+2);

@@ -65,6 +65,7 @@ namespace DataFileReader
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			WriteLine(LogLevel.DEBUG, "Processing...");
+			Validator.Reset();
 
 			var unmatchedRegions=0;
 			// in this case we read a magic and try to process it
@@ -116,8 +117,32 @@ namespace DataFileReader
 			if ( unmatchedRegions > 0 ) {
 				WriteLine(LogLevel.WARN, "There were {0} unmatched regions (magics) in the file.", unmatchedRegions);
 			}
-			WriteLine(LogLevel.DEBUG, "Processing done.");
 
+			// ensure that all ElementaryFileRegion has signature present
+			for (var i = 0; i < this.ProcessedRegions.Count; i++)
+			{
+				var region = this.ProcessedRegions[i];
+				if (region is ElementaryFileRegion)
+				{
+					if (((ElementaryFileRegion)region).Unsigned || !Validator.ValidateSignatures)
+						continue;
+
+					if (i + 1 < this.ProcessedRegions.Count)
+					{
+						var nextRegion = this.ProcessedRegions[i + 1];
+						if (region.Name == nextRegion.Name && ((ElementaryFileRegion)nextRegion).signature != null)
+						{
+							i++;
+							continue;
+						}
+					}
+
+					throw new InvalidSignatureException(string.Format("No signature present for {0}!", region.Name));
+				}
+			}
+
+			Validator.CheckIfValidated();
+			WriteLine(LogLevel.DEBUG, "Processing done.");
 		}
 
 		/// This defines what children we can have from the XML config

@@ -68,6 +68,13 @@ namespace DataFileReader
 			// Call subclass process method
 			ProcessInternal(reader);
 
+			if (this.Name == "MemberStateCertificate")
+			{
+				Validator.SetCACertificate(this);
+			} else if (this.Name == "VuCertificate")
+			{
+				Validator.SetCertificate(this);
+			};
 
 			long endPosition=reader.BaseStream.Position;
 			if ( reader.BaseStream is CyclicStream )
