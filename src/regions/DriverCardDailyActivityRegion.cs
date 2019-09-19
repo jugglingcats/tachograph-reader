@@ -22,6 +22,7 @@ namespace DataFileReader
 			previousRecordLength=reader.ReadSInt16();
 			currentRecordLength=reader.ReadSInt16();
 			recordDate=reader.ReadTimeReal();
+			SignatureRegion.UpdateTime(recordDate);
 			dailyPresenceCounter=reader.ReadBCDString(2);
 			distance=reader.ReadSInt16();
 

@@ -12,6 +12,7 @@ namespace DataFileReader
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			dateTime=reader.ReadTimeReal();
+			SignatureRegion.UpdateTime(dateTime);
 		}
 
 		public override string ToString()

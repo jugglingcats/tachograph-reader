@@ -250,9 +250,9 @@ namespace DataFileReader
 				};
 			}
 
-			public bool VerifyData(byte[] data, BigInteger signature)
+			public bool VerifyData(byte[] data, BigInteger signature, DateTimeOffset? newestDateTime)
 			{
-				if (this.IsValid())
+				if (this.IsValid(newestDateTime))
 				{
 					var message = new SignatureMessageGen1(this.publicKey.Decrypt(signature));
 					return message.GetDigestInfo().VerifyData(data);
@@ -261,11 +261,21 @@ namespace DataFileReader
 				throw new InvalidSignatureException("Invalid Certificate!");
 			}
 
-			public bool IsValid()
+			public bool IsValid(DateTimeOffset? newestDateTime)
 			{
-				if (this.endOfValidity != null && this.endOfValidity.Value <= DateTimeOffset.Now)
+				if (this.endOfValidity != null)
 				{
-					Console.Error.WriteLine(string.Format("warn: {0}\n      Certificate has expired! Certificate.endOfValidity is in past {1}!", typeof(Validator), this.endOfValidity.Value.ToString("u")));
+					// newestDateTime and endOfValidity can match and that's fine
+					// because for DriverCard it has CardExpiryDate which can be same as certificate endOfValidity
+					if (newestDateTime != null && this.endOfValidity.Value < newestDateTime.Value)
+					{
+						throw new ExpiredCertificateException(
+						              string.Format("Certificate has expired! Data time {0} is after Certificate.endOfValidity {1}",
+						              newestDateTime.Value.ToString("u"), this.endOfValidity.Value.ToString("u")));
+					} else if (newestDateTime == null)
+					{
+						 Console.Error.WriteLine(string.Format("warn: {0}\n      Can't check Certificate.endOfValidity because no time value!", typeof(Validator)));
+					};
 				};
 
 				return this.profileIdentifier == 0x01;
@@ -375,37 +385,37 @@ namespace DataFileReader
 			Validator.dataToValidate = new List<DataSignature>();
 		}
 
-		public static void CheckIfValidated()
+		public static void CheckIfValidated(DateTimeOffset? newestDateTime)
 		{
-			Validator.ValidateAllDelayedGen1();
+			Validator.ValidateAllDelayedGen1(() => { return newestDateTime; });
 			if (Validator.dataToValidate.Count > 0)
 			{
 				throw new InvalidSignatureException(string.Format("{0} signatures weren't validated!", Validator.dataToValidate.Count));
 			}
 		}
 
-		public static void ValidateDelayedGen1(byte[] data, byte[] signature)
+		public static void ValidateDelayedGen1(byte[] data, byte[] signature, Func<DateTimeOffset?> getNewestDateTime)
 		{
 			if (!Validator.ValidateSignatures)
 				return;
 
 			Validator.dataToValidate.Add(new DataSignature {data=data, signature=signature});
-			Validator.ValidateAllDelayedGen1();
+			Validator.ValidateAllDelayedGen1(getNewestDateTime);
 		}
 
-		public static void ValidateAllDelayedGen1()
+		public static void ValidateAllDelayedGen1(Func<DateTimeOffset?> getNewestDateTime)
 		{
 			if (Validator.CACertificate != null && Validator.Certificate != null)
 			{
 				foreach (var data_signature in Validator.dataToValidate)
 				{
-					Validator.ValidateGen1(data_signature.data, data_signature.signature);
+					Validator.ValidateGen1(data_signature.data, data_signature.signature, getNewestDateTime());
 				}
 				Validator.dataToValidate.Clear();
 			}
 		}
 
-		public static void ValidateGen1(byte[] data, byte[] signature)
+		public static void ValidateGen1(byte[] data, byte[] signature, DateTimeOffset? newestDateTime)
 		{
 			if (!Validator.ValidateSignatures)
 				return;
@@ -427,14 +437,14 @@ namespace DataFileReader
 			}
 
 			var certificate = Validator.CACertificate.GetCertificate(gen1RSAPublicKeys[Validator.CACertificate.certificationAuthorityReference]);
-			if (!certificate.IsValid())
+			if (!certificate.IsValid(newestDateTime))
 			{
 				throw new InvalidSignatureException("Invalid MemberStateCertificate!");
 			}
 
 			certificate = Validator.Certificate.GetCertificate(certificate.publicKey);
 
-			if (!certificate.VerifyData(data, Validator.ToBigInteger(signature)))
+			if (!certificate.VerifyData(data, Validator.ToBigInteger(signature), newestDateTime))
 			{
 				throw new InvalidSignatureException("Signature doesn't match signed data!");
 			}

@@ -41,7 +41,7 @@ namespace DataFileReader
 				long currentOffset = reader.BaseStream.Position;
 
 				reader.BaseStream.Position = SignatureRegion.signedDataOffsetBegin;
-				Validator.ValidateDelayedGen1(reader.ReadBytes(SignatureRegion.GetSignedDataLength()), this.signature);
+				Validator.ValidateDelayedGen1(reader.ReadBytes(SignatureRegion.GetSignedDataLength()), this.signature, () => { return SignatureRegion.newestDateTime; } );
 
 				reader.BaseStream.Position = currentOffset;
 			}

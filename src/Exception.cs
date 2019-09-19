@@ -24,4 +24,11 @@ namespace DataFileReader
 		}
 	}
 
+	public class ExpiredCertificateException : InvalidSignatureException
+	{
+		public ExpiredCertificateException(string message) : base(message)
+		{
+		}
+	}
+
 }
