@@ -65,6 +65,7 @@ namespace DataFileReader
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			WriteLine(LogLevel.DEBUG, "Processing...");
+			SignatureRegion.Reset();
 			Validator.Reset();
 
 			var unmatchedRegions=0;
@@ -141,7 +142,7 @@ namespace DataFileReader
 				}
 			}
 
-			Validator.CheckIfValidated();
+			Validator.CheckIfValidated(SignatureRegion.newestDateTime);
 			WriteLine(LogLevel.DEBUG, "Processing done.");
 		}
 
