@@ -47,15 +47,13 @@ The standard is not particularly well written and it took quite a bit of work to
 
 It's amusing that the authors of the standard went to great pains to fit the data in the space available on the cards of the time... a very cheap USB stick would now hold a lifetime's worth of driver data!
 
-The code does not validate the digital signatures in a file, so it's possible someone could provide a fraudulent data file and we would not detect it. If this is important to you, you are probably stuck with using the available commercial software to process your data files.
+I created this project with the hope that someone would find it useful and clearly people have. There have been number of great pull requests and people are starting to think about v2 file format support (see issues).
 
-I am distributing the code in the hope that someone finds it useful but without any warranty of any kind.
-
-If you have issues or questions I may be able to help - time permitting - so please raise an issue. Even better, create a pull request!
+If you have issues or questions, other developers may be able to help so please raise an issue. Even better, create your own pull request!
 
 ---
 
-Copyright (C) 2014-2017 Alfie Kirkpatrick
+Copyright (C) 2014-2019 Alfie Kirkpatrick
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
