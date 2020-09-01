@@ -72,10 +72,15 @@ namespace tachograph_reader
 
         private static void ProcessFile(DataFile proc, string f)
         {
-            var xtw = new XmlTextWriter(Stream.Null, Encoding.UTF8);
+            var fileOut = f + ".xml";
+            var xtw = new XmlTextWriter(fileOut, Encoding.UTF8);
             try
             {
                 proc.Process(f, xtw);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("{0} failed with {1} {2}", f, e.Message, e.StackTrace);
             }
             finally
             {
