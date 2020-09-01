@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>net5.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +15,6 @@
     <EmbeddedResource Include="..\ERCA\ERCA Gen2 (1) Root Certificate.bin" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Buffers" Version="4.5.0" />
-    <PackageReference Include="System.Security.Cryptography.Asn1.Experimental" Version="0.1.1-preview2-190117-2" />
+    <PackageReference Include="System.Buffers" Version="4.5.1" />
   </ItemGroup>
 </Project>

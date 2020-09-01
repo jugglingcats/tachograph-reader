@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "tachograph-reader-core": {
+      "commandName": "Project"
+    }
+  }
+}

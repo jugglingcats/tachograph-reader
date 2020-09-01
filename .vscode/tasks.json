@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/tachograph-reader.csproj"
+                "${workspaceFolder}/core/tachograph-reader-core.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

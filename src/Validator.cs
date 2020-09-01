@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Numerics;
 using System.Reflection;
 using System.Linq;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 
 namespace DataFileReader
 {
@@ -120,7 +120,7 @@ namespace DataFileReader
 			public DigestAlgorithmIdentifier(AsnReader asnReader)
 			{
 				asnReader = asnReader.ReadSequence();
-				this.algorithm = asnReader.ReadObjectIdentifier();
+				this.algorithm = new Oid(asnReader.ReadObjectIdentifier());
 				if (asnReader.PeekTag() == Asn1Tag.Null)
 				{
 					asnReader.ReadNull();
