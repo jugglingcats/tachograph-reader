@@ -35,10 +35,14 @@ Validator.ValidateSignatures = true;
 
 Now when processing file if there will any issue with validating signed data `InvalidSignatureException` will be thrown.
 
-### About project
+### How to run the code
 
-The project tachograph-reader.csproj is suitable for using with Visual Studio and VScode supporting .Net5 or above, and contains a simple command line app. Run the command without args to scan `./data/vehicle` and `./data/driver` and process all files found. The output files will be saved in the same file name with `.xml` extension added. 
+This project is suitable for using with Visual Studio and VScode supporting .Net5.0 or above. For .NetCore2.1 support see commit `ce8932973ef25ee9eee58f7ffe9c1add76259dd7`.
+
+This repository contains a simple command line app (`app` folder). Run the command without args to scan `./data/vehicle` and `./data/driver` and process all files found. The output files will be saved in the same file name with `.xml` extension added. 
 Run the command with `--driver <driverfile>` or `--vehicle <vehiclefile>` to process individual files. You can also specify an output filename for the resulting XML, e.g. `--driver <driverfile> [output file]`. Tasks are set up in VScode for running the command.
+
+### Adapting to variations in DDD file format
 
 Most of the sections/features of both data file formats are catered for. It's possible to modify the data file formats using `DriverCardData.config` and `VehicleUnitData.config`. These are two XML files defining the structure of the data with features specific to the standard (such as cyclic buffer support).
 
