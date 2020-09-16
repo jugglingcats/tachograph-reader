@@ -12,9 +12,10 @@ namespace DataFileReader
 		static Dictionary<string, Encoding> encodingCache = new Dictionary<string, Encoding>();
 		static Dictionary<byte, string> charsetMapping = new Dictionary<byte, string>();
 
-		// private int codepage;
-
 		static CodePageStringRegion() {
+
+			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
 			foreach ( var i in Encoding.GetEncodings() ) {
 				if (!encodingCache.ContainsKey(i.Name.ToUpper()))
 					encodingCache.Add(i.Name.ToUpper(), i.GetEncoding());
