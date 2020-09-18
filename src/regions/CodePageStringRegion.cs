@@ -44,7 +44,10 @@ namespace DataFileReader
 						var encoding = Encoding.GetEncoding(encodingName);
 						encodingCache.Add(encodingName, encoding);
 					} catch (ArgumentException e) {
+#if DEBUG
+						// this message only makes sense in the testing or debugging context
 						Console.Error.WriteLine("Warning! Current platform doesn't support encoding with name {0}\n{1}", encodingName, e.Message);
+#endif
 					}
 				}
 			}
