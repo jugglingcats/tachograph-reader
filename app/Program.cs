@@ -65,6 +65,7 @@ namespace tachograph_reader
             var files = Directory.GetFiles("data/" + type);
             foreach (var f in files)
             {
+                if (!f.ToLower().EndsWith(".ddd")) continue;
                 var proc = factory();
                 ProcessFile(proc, f);
             }
