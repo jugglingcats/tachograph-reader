@@ -24,15 +24,7 @@ namespace DataFileReader
 			charsetMapping[0] = "ASCII";
 			charsetMapping[1] = "ISO-8859-1";
 			charsetMapping[2] = "ISO-8859-2";
-			charsetMapping[3] = "ISO-8859-3";
-			charsetMapping[5] = "ISO-8859-5";
 			charsetMapping[7] = "ISO-8859-7";
-			charsetMapping[9] = "ISO-8859-9";
-			charsetMapping[13] = "ISO-8859-13";
-			charsetMapping[15] = "ISO-8859-15";
-			charsetMapping[16] = "ISO-8859-16";
-			charsetMapping[80] = "KOI8-R";
-			charsetMapping[85] = "KOI8-U";
 
 			// CodePagesEncodingProvider (System.Text.Encoding.CodePages package) on .NET Core by default (GetEncodings() method) supports only few encodings
 			// https://msdn.microsoft.com/en-us/library/system.text.codepagesencodingprovider.aspx#Anchor_4
@@ -46,7 +38,7 @@ namespace DataFileReader
 					} catch (ArgumentException e) {
 #if DEBUG
 						// this message only makes sense in the testing or debugging context
-						Console.Error.WriteLine("Warning! Current platform doesn't support encoding with name {0}\n{1}", encodingName, e.Message);
+						Console.Error.WriteLine("Unupported encoding {0}\n{1}", encodingName, e.Message);
 #endif
 					}
 				}
