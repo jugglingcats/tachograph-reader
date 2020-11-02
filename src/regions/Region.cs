@@ -91,8 +91,8 @@ namespace DataFileReader
 
 		protected void WriteLine(LogLevel level, string format, params object[] args)
 		{
-			if ( level >= LogLevel )
-				Console.WriteLine(format, args);
+			if (level >= LogLevel)
+				Console.WriteLine(DateTime.UtcNow.ToString("s") +" " + format, args);
 		}
 
 		protected abstract void ProcessInternal(CustomBinaryReader reader);

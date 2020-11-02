@@ -108,21 +108,37 @@ namespace DataFileReader
 					}
 				}
 
+				// skip ahead to the end of the region if unmatched
 				if ( !matched ) {
 					unmatchedRegions++;
-					if ( unmatchedRegions == 1 ) {
-						WriteLine(LogLevel.WARN, "First unrecognised region with magic {1} at 0x{1:X4}", magicString, magicPos);
+					WriteLine(LogLevel.WARN, "Unrecognized region with magic {0} at 0x{1:X4}", magicString, magicPos);
+					if (DataFile.StrictProcessing) throw new NotImplementedException("Unrecognized magic " + magicString);
+
+					// get region type
+					byte[] regionType = new byte[1];
+					bytesRead = reader.BaseStream.Read(regionType, 0, 1);
+					WriteLine(LogLevel.INFO, "- type: {0}", (int)regionType[0]);
+					if (bytesRead == 0) break;
+
+					// get region length
+					byte[] regionLenBytes = new byte[2];
+					bytesRead = reader.BaseStream.Read(regionLenBytes, 0, 2);
+					if (bytesRead != 2) break;
+					long regionLength = regionLenBytes[1] | regionLenBytes[0] << 8;
+					WriteLine(LogLevel.INFO, "- location: {0:X4}-{1:X4}/{2:X4}", reader.BaseStream.Position, reader.BaseStream.Position + regionLength, regionLength);
+
+					// skip to the end
+					while (regionLength > int.MaxValue)
+					{
+						reader.ReadBytes(int.MaxValue);
+						regionLength -= int.MaxValue;
 					}
+					reader.ReadBytes((int)regionLength);
 				}
 
-				if (!matched && DataFile.StrictProcessing)
-				{
-					WriteLine(LogLevel.WARN, "Unrecognized magic=0x{0:X2}{1:X2} at offset 0x{2:X4}  ", magic[0], magic[1], magicPos);
-					throw new NotImplementedException("Unrecognized magic " + magicString);
-				}
 			}
 			if ( unmatchedRegions > 0 ) {
-				WriteLine(LogLevel.WARN, "There were {0} unmatched regions (magics) in the file.", unmatchedRegions);
+				WriteLine(LogLevel.WARN, "There were {0} unmatched regions (magics) in the file.\n", unmatchedRegions);
 			}
 
 			// ensure that all ElementaryFileRegion has signature present

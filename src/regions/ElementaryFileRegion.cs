@@ -16,6 +16,7 @@ namespace DataFileReader
 		public bool IsSignature(CustomBinaryReader reader)
 		{
 			int type=reader.PeekChar();
+			WriteLine(LogLevel.DEBUG, "- type: {0}", type);
 			return type == 0x01;
 		}
 
@@ -33,6 +34,7 @@ namespace DataFileReader
 			long fileLength=regionLength;
 
 			long start=reader.BaseStream.Position;
+			WriteLine(LogLevel.DEBUG, "- location: {0:X4}-{1:X4}/{2:X4}", start, start + regionLength, regionLength);
 			if (DataFile.StrictProcessing && start + regionLength > reader.BaseStream.Length)
 			{
 				throw new InvalidOperationException(string.Format("{0}: Would try to read more than length of stream! Position 0x{1:X4} + RegionLength 0x{2:X4} > Length 0x{3:X4}", Name, start, regionLength, reader.BaseStream.Length));
@@ -50,8 +52,8 @@ namespace DataFileReader
 				Validator.ValidateDelayedGen1(reader.ReadBytes(SignatureRegion.GetSignedDataLength()), this.signature, () => { return SignatureRegion.newestDateTime; } );
 
 				reader.BaseStream.Position = currentOffset;
-			}
-			else
+			} 
+			else if (type == 0)
 			{
 				base.ProcessInternal(reader);
 
@@ -66,6 +68,11 @@ namespace DataFileReader
 					Validator.SetCACertificate(this);
 				};
 			}
+			else
+			{
+				// this is some unknown section and should be skipped
+				WriteLine(LogLevel.INFO, "- skipping matched type {0:X2} for {1}", type, Name);
+			}
 
 			if (DataFile.StrictProcessing && fileLength != 0)
 			{
@@ -79,6 +86,7 @@ namespace DataFileReader
 
 			if ( fileLength > 0 )
 			{
+				WriteLine(LogLevel.INFO, "Unread bytes in the region: {0}", fileLength);
 				// deal with a remaining fileLength that is greater than int
 				while ( fileLength > int.MaxValue )
 				{
