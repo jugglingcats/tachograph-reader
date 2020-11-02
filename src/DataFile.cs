@@ -15,13 +15,13 @@ namespace DataFileReader
 	/// </summary>
 	public class DataFile : Region
 	{
-		public static bool StrictProcessing {get; set;} = false;
+		public static bool StrictProcessing { get; set; } = false;
 
 		[XmlIgnore]
-		public ArrayList regions=new ArrayList();
+		public ArrayList regions = new ArrayList();
 
 		[XmlIgnore]
-		public List<Region> ProcessedRegions {get; private set;} = new List<Region>();
+		public List<Region> ProcessedRegions { get; private set; } = new List<Region>();
 
 		/// <summary>
 		/// This method loads the XML config file into a new instance
@@ -32,14 +32,14 @@ namespace DataFileReader
 		// 
 		public static DataFile Create(string configFile)
 		{
-			XmlReader xtr=XmlReader.Create(File.OpenRead(configFile));
+			XmlReader xtr = XmlReader.Create(File.OpenRead(configFile));
 			return Create(xtr);
 		}
 
 		protected static DataFile Create(XmlReader xtr)
 		{
-			XmlSerializer xs=new XmlSerializer(typeof(DataFile));
-			return (DataFile) xs.Deserialize(xtr);
+			XmlSerializer xs = new XmlSerializer(typeof(DataFile));
+			return (DataFile)xs.Deserialize(xtr);
 		}
 
 		/// Convenience method to open a file and process it
@@ -70,19 +70,19 @@ namespace DataFileReader
 			SignatureRegion.Reset();
 			Validator.Reset();
 
-			var unmatchedRegions=0;
+			var unmatchedRegions = 0;
 			// in this case we read a magic and try to process it
-			while ( true )
+			while (true)
 			{
-				byte[] magic=new byte[2];
-				int bytesRead=reader.BaseStream.Read(magic, 0, 2);
+				byte[] magic = new byte[2];
+				int bytesRead = reader.BaseStream.Read(magic, 0, 2);
 				long magicPos = reader.BaseStream.Position - 2;
 
-				if ( bytesRead == 0 )
+				if (bytesRead == 0)
 					// end of file - nothing more to read
 					break;
 
-				if ( bytesRead == 1 )
+				if (bytesRead == 1)
 				{
 					// this can happen if zipping over unmatched bytes at end of file - should handle better
 					if (DataFile.StrictProcessing)
@@ -93,11 +93,11 @@ namespace DataFileReader
 				}
 
 				// test whether the magic matches one of our child objects
-				string magicString=string.Format("0x{0:X2}{1:X2}", magic[0], magic[1]);
+				string magicString = string.Format("0x{0:X2}{1:X2}", magic[0], magic[1]);
 				bool matched = false;
-				foreach ( IdentifiedObjectRegion r in regions )
+				foreach (IdentifiedObjectRegion r in regions)
 				{
-					if ( r.Matches(magicString) )
+					if (r.Matches(magicString))
 					{
 						WriteLine(LogLevel.DEBUG, "Identified region: {0} with magic {1} at 0x{2:X4}", r.Name, magicString, magicPos);
 						var newRegion = r.Copy();
@@ -109,7 +109,8 @@ namespace DataFileReader
 				}
 
 				// skip ahead to the end of the region if unmatched
-				if ( !matched ) {
+				if (!matched)
+				{
 					unmatchedRegions++;
 					WriteLine(LogLevel.WARN, "Unrecognized region with magic {0} at 0x{1:X4}", magicString, magicPos);
 					if (DataFile.StrictProcessing) throw new NotImplementedException("Unrecognized magic " + magicString);
@@ -137,7 +138,8 @@ namespace DataFileReader
 				}
 
 			}
-			if ( unmatchedRegions > 0 ) {
+			if (unmatchedRegions > 0)
+			{
 				WriteLine(LogLevel.WARN, "There were {0} unmatched regions (magics) in the file.\n", unmatchedRegions);
 			}
 

@@ -11,11 +11,11 @@ namespace DataFileReader
 	// TODO: M: make log level command line option
 	public enum LogLevel
 	{
-		NONE=0,
-		DEBUG=1,
-		INFO=2,
-		WARN=3,
-		ERROR=4
+		NONE = 0,
+		DEBUG = 1,
+		INFO = 2,
+		WARN = 3,
+		ERROR = 4
 	}
 
 	/// Abstract base class for all regions. Holds some convenience methods
@@ -29,11 +29,11 @@ namespace DataFileReader
 		public bool GlobalValue;
 
 		[XmlAttribute]
-		public LogLevel LogLevel=LogLevel.INFO;
+		public LogLevel LogLevel = LogLevel.INFO;
 
 		protected long byteOffset;
-		protected long regionLength=0;
-		protected static Hashtable globalValues=new Hashtable();
+		protected long regionLength = 0;
+		protected static Hashtable globalValues = new Hashtable();
 		protected static readonly String[] countries = new string[] {"No information available",
 			"Austria","Albania","Andorra","Armenia","Azerbaijan","Belgium","Bulgaria","Bosnia and Herzegovina",
 			"Belarus","Switzerland","Cyprus","Czech Republic","Germany","Denmark","Spain","Estonia","France",
@@ -43,7 +43,7 @@ namespace DataFileReader
 			"Russian Federation","Sweden","Slovakia","Slovenia","Turkmenistan","Turkey","Ukraine","Vatican City",
 			"Yugoslavia"};
 
-		protected bool ShouldSuppressElement {get; private set;} = false;
+		protected bool ShouldSuppressElement { get; private set; } = false;
 
 		public virtual Region Copy()
 		{
@@ -61,7 +61,7 @@ namespace DataFileReader
 		public void Process(CustomBinaryReader reader)
 		{
 			// Store start of region (for logging only)
-			byteOffset=reader.BaseStream.Position;
+			byteOffset = reader.BaseStream.Position;
 
 			this.ShouldSuppressElement = SuppressElement(reader);
 
@@ -71,28 +71,29 @@ namespace DataFileReader
 			if (this.Name == "MemberStateCertificate")
 			{
 				Validator.SetCACertificate(this);
-			} else if (this.Name == "VuCertificate")
+			}
+			else if (this.Name == "VuCertificate")
 			{
 				Validator.SetCertificate(this);
 			};
 
-			long endPosition=reader.BaseStream.Position;
-			if ( reader.BaseStream is CyclicStream )
-				endPosition=((CyclicStream) reader.BaseStream).ActualPosition;
+			long endPosition = reader.BaseStream.Position;
+			if (reader.BaseStream is CyclicStream)
+				endPosition = ((CyclicStream)reader.BaseStream).ActualPosition;
 
 			WriteLine(LogLevel.DEBUG, "{0} [0x{1:X4}-0x{2:X4}/0x{3:X4}] {4}", Name, byteOffset,
-				endPosition, endPosition-byteOffset, ToString());
+				endPosition, endPosition - byteOffset, ToString());
 
-			if ( GlobalValue )
+			if (GlobalValue)
 			{
-                globalValues[Name] = ToString();
+				globalValues[Name] = ToString();
 			}
 		}
 
 		protected void WriteLine(LogLevel level, string format, params object[] args)
 		{
 			if (level >= LogLevel)
-				Console.WriteLine(DateTime.UtcNow.ToString("s") +" " + format, args);
+				Console.WriteLine(DateTime.UtcNow.ToString("s") + " " + format, args);
 		}
 
 		protected abstract void ProcessInternal(CustomBinaryReader reader);
@@ -107,7 +108,7 @@ namespace DataFileReader
 
 		public long RegionLength
 		{
-			set { regionLength=value; }
+			set { regionLength = value; }
 		}
 
 		public void ToXML(XmlWriter writer)
