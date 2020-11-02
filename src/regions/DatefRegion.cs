@@ -18,7 +18,15 @@ namespace DataFileReader
 			// year 0, month 0, day 0 means date isn't set
 			if (year > 0 || month > 0 || day > 0)
 			{
-				dateTime = new DateTime((int)year, (int)month, (int)day);
+				try
+				{
+					dateTime = new DateTime((int)year, (int)month, (int)day);
+				}
+				catch (Exception ex)
+                {
+					Console.Error.WriteLine($"Y:{year}, M:{month}, D:{day}");
+					throw new Exception($"Failed to convert to DateTime with {ex.Message}");
+                }
 			}
 		}
 
