@@ -7,14 +7,14 @@ namespace DataFileReader
 	public class CardNumberRegion : Region
 	{
 		protected string driverIdentification;
-		protected byte replacementIndex;
-		protected byte renewalIndex;
+		protected string replacementIndex;
+		protected string renewalIndex;
 
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			driverIdentification=reader.ReadString(14);
-			replacementIndex=reader.ReadByte();
-			renewalIndex=reader.ReadByte();
+			replacementIndex=reader.ReadChar().ToString();
+			renewalIndex=reader.ReadChar().ToString();
 		}
 
 		public override string ToString()
@@ -25,8 +25,8 @@ namespace DataFileReader
 
 		protected override void InternalToXML(XmlWriter writer)
 		{
-			writer.WriteAttributeString("ReplacementIndex", replacementIndex.ToString());
-			writer.WriteAttributeString("RenewalIndex", renewalIndex.ToString());
+			writer.WriteAttributeString("ReplacementIndex", replacementIndex);
+			writer.WriteAttributeString("RenewalIndex", renewalIndex);
 
 			writer.WriteString(driverIdentification);
 		}
