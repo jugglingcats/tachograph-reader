@@ -17,7 +17,7 @@ Once you have a reader instance you can give it a binary file to read and an XML
 vudf.Process("file.ddd", writer);
 ```
 
-Or alternativly you can work with proccessed regions directly, like
+Or alternativly you can work with processed regions directly, like
 
 ```c#
 vudf.Process(ddd);
@@ -54,6 +54,10 @@ It's amusing that the authors of the standard went to great pains to fit the dat
 I created this project with the hope that someone would find it useful and clearly people have. There have been number of great pull requests and people are starting to think about v2 file format support (see issues).
 
 If you have issues or questions, other developers may be able to help so please raise an issue. Even better, create your own pull request!
+
+## .Net5 support
+
+.Net5 support is enabled in [net5](https://github.com/jugglingcats/tachograph-reader/tree/net5) branch. Please, use that for any future development. The current `master` branch supports previous versions of .net.
 
 ---
 
