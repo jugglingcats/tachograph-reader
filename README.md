@@ -51,6 +51,10 @@ I created this project with the hope that someone would find it useful and clear
 
 If you have issues or questions, other developers may be able to help so please raise an issue. Even better, create your own pull request!
 
+## .Net5 support
+
+.Net5 support is enabled in [net5](https://github.com/jugglingcats/tachograph-reader/tree/net5) branch. Please, use that for any future development. The current `master` branch supports previous versions of .net.
+
 ---
 
 Copyright (C) 2014-2019 Alfie Kirkpatrick
