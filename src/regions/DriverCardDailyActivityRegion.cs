@@ -26,6 +26,9 @@ namespace DataFileReader
 			dailyPresenceCounter=reader.ReadBCDString(2);
 			distance=reader.ReadSInt16();
 
+			if (currentRecordLength < 12 || (currentRecordLength - 12) % 2 != 0 || currentRecordLength > regionLength)
+				throw new ReaderException("Invalid daily activity record length");
+			ProcessedRegions.Clear();
 			uint recordCount=(currentRecordLength-12)/2;
 			this.ProcessedRegions.Capacity = (int)recordCount;
 

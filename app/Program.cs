@@ -8,18 +8,18 @@ namespace tachograph_reader
 {
     class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             if (args.Length == 0)
             {
                 ProcessDataDirs();
-                return;
+                return 0;
             }
 
             if (args.Length < 2)
             {
                 Console.Error.WriteLine("Expected --driver <file> or --vehicle <file> [output file]");
-                return;
+                return 2;
             }
 
             DataFile proc = null;
@@ -36,22 +36,42 @@ namespace tachograph_reader
             if (proc == null)
             {
                 Console.Error.WriteLine("Expected --driver <file> or --vehicle <file> [output file]");
-                return;
+                return 2;
             }
 
 
-            proc.LogLevel = LogLevel.DEBUG;
-            var xtw = args.Length > 2 ? new XmlTextWriter(args[2], Encoding.UTF8) : new XmlTextWriter(Stream.Null, Encoding.UTF8);
+            proc.LogLevel = LogLevel.INFO;
+            string output = args.Length > 2 ? Path.GetFullPath(args[2]) : null;
+            if (output != null && string.Equals(output, Path.GetFullPath(args[1]), StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Error.WriteLine("Eingabe- und Ausgabedatei muessen unterschiedlich sein.");
+                return 2;
+            }
+            string temporary = output == null ? null : Path.Combine(Path.GetDirectoryName(output), ".tacho-" + Guid.NewGuid().ToString("N") + ".tmp");
             try
             {
-                xtw.Formatting = Formatting.Indented;
-                proc.Process(args[1], xtw);
+                using (Stream stream = temporary == null ? Stream.Null : new FileStream(temporary, FileMode.CreateNew, FileAccess.Write))
+                using (var xtw = new XmlTextWriter(stream, Encoding.UTF8))
+                {
+                    xtw.Formatting = Formatting.Indented;
+                    proc.Process(args[1], xtw);
+                }
+                if (output != null)
+                {
+                    if (File.Exists(output)) File.Replace(temporary, output, null);
+                    else File.Move(temporary, output);
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Datei konnte nicht verarbeitet werden: " + ex.Message);
+                return 1;
             }
             finally
             {
-                xtw.Close();
+                if (temporary != null && File.Exists(temporary)) File.Delete(temporary);
             }
-
         }
 
         private static void ProcessDataDirs()

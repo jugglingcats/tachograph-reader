@@ -3,9 +3,9 @@ using System.IO;
 
 namespace DataFileReader
 {
-    /// <summary>
-    /// Implementation of a Stream that deals with the cyclic buffer in driver cards
-    /// </summary>
+	/// <summary>
+	/// Implementation of a Stream that deals with the cyclic buffer in driver cards
+	/// </summary>
 	public class CyclicStream : Stream
 	{
 		private Stream baseStream;
@@ -22,34 +22,20 @@ namespace DataFileReader
 
 		public override int Read(byte[] buffer, int offset, int count)
 		{
-			if (count <= 0)
+			if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+			if (offset < 0 || count < 0 || offset > buffer.Length - count) throw new ArgumentOutOfRangeException();
+			if (count == 0) return 0;
+			long position = Position;
+			if (position < 0 || position > length) throw new EndOfStreamException("Invalid cyclic position");
+			if (position == length)
 			{
-				throw new ArgumentOutOfRangeException("Count must be positive!");
+				if (wrapped) throw new EndOfStreamException("Cyclic stream has already wrapped");
+				baseStream.Position = startOffset;
+				wrapped = true;
+				position = 0;
 			}
-			long currentPosition=Position;
-			if (currentPosition > length)
-			{
-				throw new EndOfStreamException("Trying to read after end position!");
-			}
-
-			if ( currentPosition + count <= length )
-				return baseStream.Read(buffer, offset, count);
-
-			if ( wrapped )
-				throw new EndOfStreamException("Cyclic stream has already wrapped");
-
-			wrapped=true;
-
-			int remaining=(int) (length-currentPosition);
-			int read=baseStream.Read(buffer, offset, remaining);
-
-			count-=remaining;
-
-			baseStream.Seek(startOffset, SeekOrigin.Begin);
-
-			read+=Read(buffer, offset+remaining, count);
-
-			return read;
+			// Returning a partial read is permitted by Stream. BinaryReader fills its request.
+			return baseStream.Read(buffer, offset, (int)Math.Min(count, length - position));
 		}
 
 		public bool Wrapped

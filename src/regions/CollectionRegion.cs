@@ -48,6 +48,7 @@ namespace DataFileReader
 
 		protected void ProcessItems(CustomBinaryReader reader, uint count)
 		{
+			this.ProcessedRegions.Clear();
 			WriteLine(LogLevel.DEBUG, "Processing repeating {0}, count={1}, offset=0x{2:X4}", Name, count, reader.BaseStream.Position);
 
 			// repeat processing of child objects
@@ -67,8 +68,7 @@ namespace DataFileReader
 					count--;
 				} catch (EndOfStreamException ex)
 				{
-					WriteLine(LogLevel.ERROR, "Repeating {0}, count={1}/{2}: {3}", Name, count, maxCount, ex);
-					break;
+					throw new EndOfStreamException(string.Format("Truncated collection {0}, remaining {1}/{2}", Name, count, maxCount), ex);
 				}
 			}
 		}

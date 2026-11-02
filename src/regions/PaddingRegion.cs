@@ -13,10 +13,7 @@ namespace DataFileReader
 
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
-			byte[] buf=new byte[Size];
-			int amountRead=reader.Read(buf, 0, Size);
-			if ( amountRead != Size )
-				throw new InvalidOperationException("End of file reading padding (size "+Size+")");
+			reader.ReadExactlyBytes(Size);
 		}
 
 		public override string ToString()

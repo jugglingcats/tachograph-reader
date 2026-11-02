@@ -32,8 +32,9 @@ namespace DataFileReader
 		// 
 		public static DataFile Create(string configFile)
 		{
-			XmlReader xtr=XmlReader.Create(File.OpenRead(configFile));
-			return Create(xtr);
+			using (var stream = File.OpenRead(configFile))
+			using (var xtr = XmlReader.Create(stream))
+				return Create(xtr);
 		}
 
 		protected static DataFile Create(XmlReader xtr)
@@ -46,14 +47,14 @@ namespace DataFileReader
 		public void Process(string dataFile, XmlWriter writer)
 		{
 			WriteLine(LogLevel.INFO, "Processing {0}", dataFile);
-			Stream s = new FileStream(dataFile, FileMode.Open, FileAccess.Read);
-			Process(s, writer);
+			using (Stream s = File.OpenRead(dataFile))
+				Process(s, writer);
 		}
 
 		public void Process(Stream s)
 		{
-			CustomBinaryReader r = new CustomBinaryReader(s);
-			Process(r);
+			using (var r = new CustomBinaryReader(s, true))
+				Process(r);
 		}
 
 		public void Process(Stream s, XmlWriter writer)
@@ -62,20 +63,33 @@ namespace DataFileReader
 			this.ToXML(writer);
 		}
 
+		private static readonly object processingLock = new object();
+
+		public override void Process(CustomBinaryReader reader)
+		{
+			if (!reader.BaseStream.CanSeek) throw new NotSupportedException("A seekable stream is required");
+			lock (processingLock)
+			{
+				ProcessedRegions.Clear();
+				globalValues.Clear();
+				try { base.Process(reader); }
+				catch { ProcessedRegions.Clear(); throw; }
+			}
+		}
+
 		/// This is the core method overridden by all subclasses of Region
-		// TODO: M: very inefficient if no matches found - will iterate over WORDs to end of file
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
 			WriteLine(LogLevel.DEBUG, "Processing...");
 			SignatureRegion.Reset();
 			Validator.Reset();
 
-			var unmatchedRegions=0;
 			// in this case we read a magic and try to process it
 			while ( true )
 			{
 				byte[] magic=new byte[2];
-				int bytesRead=reader.BaseStream.Read(magic, 0, 2);
+				int bytesRead=reader.Read(magic, 0, 1);
+				if (bytesRead == 1) bytesRead += reader.Read(magic, 1, 1);
 				long magicPos = reader.BaseStream.Position - 2;
 
 				if ( bytesRead == 0 )
@@ -84,12 +98,7 @@ namespace DataFileReader
 
 				if ( bytesRead == 1 )
 				{
-					// this can happen if zipping over unmatched bytes at end of file - should handle better
-					if (DataFile.StrictProcessing)
-					{
-						throw new InvalidOperationException("Could only read one byte of identifier at end of stream");
-					}
-					break;
+					throw new EndOfStreamException("Truncated block identifier");
 				}
 
 				// test whether the magic matches one of our child objects
@@ -108,22 +117,14 @@ namespace DataFileReader
 					}
 				}
 
-				if ( !matched ) {
-					unmatchedRegions++;
-					if ( unmatchedRegions == 1 ) {
-						WriteLine(LogLevel.WARN, "First unrecognised region with magic {1} at 0x{1:X4}", magicString, magicPos);
-					}
-				}
-
-				if (!matched && DataFile.StrictProcessing)
+				if (!matched)
 				{
 					WriteLine(LogLevel.WARN, "Unrecognized magic=0x{0:X2}{1:X2} at offset 0x{2:X4}  ", magic[0], magic[1], magicPos);
-					throw new NotImplementedException("Unrecognized magic " + magicString);
+					throw new ReaderException(string.Format("Unrecognized block {0} at 0x{1:X}", magicString, magicPos));
 				}
 			}
-			if ( unmatchedRegions > 0 ) {
-				WriteLine(LogLevel.WARN, "There were {0} unmatched regions (magics) in the file.", unmatchedRegions);
-			}
+
+			if (ProcessedRegions.Count == 0) throw new ReaderException("No tachograph blocks found");
 
 			// ensure that all ElementaryFileRegion has signature present
 			for (var i = 0; i < this.ProcessedRegions.Count; i++)
@@ -137,7 +138,7 @@ namespace DataFileReader
 					if (i + 1 < this.ProcessedRegions.Count)
 					{
 						var nextRegion = this.ProcessedRegions[i + 1];
-						if (region.Name == nextRegion.Name && ((ElementaryFileRegion)nextRegion).signature != null)
+						if (region.Name == nextRegion.Name && nextRegion is ElementaryFileRegion && ((ElementaryFileRegion)nextRegion).signature != null)
 						{
 							i++;
 							continue;
@@ -154,7 +155,8 @@ namespace DataFileReader
 
 		/// This defines what children we can have from the XML config
 		[XmlElement("IdentifiedObject", typeof(IdentifiedObjectRegion)),
-		XmlElement("ElementaryFile", typeof(ElementaryFileRegion))]
+		XmlElement("ElementaryFile", typeof(ElementaryFileRegion)),
+		XmlElement("Gen2VehicleUnit", typeof(Gen2VehicleUnitRegion))]
 		public ArrayList Regions
 		{
 			get { return regions; }
