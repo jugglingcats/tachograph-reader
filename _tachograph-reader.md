@@ -10,7 +10,8 @@ This document owns parser boundaries and wire-format details for maintainers.
 embedded XML configuration into a `DataFile`. `DataFile.Process` dispatches
 identified blocks; `ToXML` exports `ProcessedRegions`. Unknown identifiers,
 truncation and Gen2 count/size mismatches fail explicitly. `StrictProcessing`
-additionally rejects unconsumed Gen1 elementary-file bytes.
+additionally rejects unconsumed Gen1 elementary-file bytes and malformed GNSS
+coordinates.
 
 Whole-file parsing is serialized because legacy regions and `Validator` use
 static state. Keep global switches stable while parsing. Reader instances and
@@ -42,7 +43,9 @@ The third TLV tag byte selects Gen1 data/signatures (00/01) or Gen2
 data/signatures (02/03). Shared file IDs select separate layouts.
 `Gen2CardRegion` exposes `Data`, `BlockType`, application `Version` and signature
 bytes. Signature TLVs stay visible in XML and must immediately follow matching
-Gen2 data TLVs. Zero/reserved TLV lengths are rejected.
+Gen2 data TLVs. Zero/reserved TLV lengths are rejected. ICC/chip identification
+EFs 0002/0005 accept Gen2 data tags and retain separate generation-specific XML
+sections. These EFs are unsigned; download-time EF 050E accepts signatures.
 
 A per-invocation `Gen2CardContext` scans card TLV headers and reads application
 metadata before decoding records. Metadata can therefore follow its data;
@@ -52,7 +55,7 @@ unsupported versions and count/pointer/length mismatches fail explicitly.
 Fixed card arrays retain physical order and their newest-record pointer. Daily
 activities follow the cyclic record chain through the newest record.
 
-Common files and Gen1 application layouts stay in `DriverCardData.config`.
+Gen1 common files and application layouts stay in `DriverCardData.config`.
 Gen2 versions share identification, licence, download, event/fault, activity,
 vehicle, place, current-use, control, condition, vehicle-unit and GNSS layouts.
 Version 2 adds EFs 0525 (application extension), 0526/0527 (place/GNSS
@@ -64,7 +67,9 @@ Length-prefixed application extensions retain unknown trailing bytes.
 ## Data interpretation and verification limits
 
 Coordinates retain the signed raw integer and export decimal degrees; 7FFFFF
-means unavailable. Unknown string encodings retain raw bytes with
+means unavailable. Malformed coordinate values retain `Raw` with `Valid="false"`
+and `Available="false"` instead of exporting a decimal position; strict mode
+rejects them. Unknown string encodings retain raw bytes with
 `EncodingKnown="false"`; supported code pages decode without ASCII substitution.
 Workshop, control and company card numbers use the owner/consecutive-index
 layout, while driver card numbers use the driver identification layout.
@@ -74,8 +79,9 @@ ECC trust-chain/signature verification is unsupported; enabling
 `Validator.ValidateSignatures` rejects Gen2 application or vehicle-unit data.
 Gen1 retains opt-in RSA validation. Parsing alone does not establish authenticity.
 
-Real Gen2 exports were not supplied. Synthetic tests cover both versions and
-card capacities through the version 2 load-operation limit. The external fixture
+Private mixed Gen1/Gen2 driver-card exports cover both Gen2 versions. Synthetic
+tests also cover card capacities through the version 2 load-operation limit.
+Real Gen2 vehicle-unit exports remain unverified. The external fixture
 mode uses the five original Gen1 vehicle-unit files and can check RSA signatures
 and tamper rejection. Fixtures remain outside the child repository. Legacy
 build targets and hosted CI remain unverified. See the public usage guide for

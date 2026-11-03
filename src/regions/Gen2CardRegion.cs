@@ -20,6 +20,8 @@ namespace DataFileReader
         {
             switch (fid)
             {
+                case 0x0002: return "CardIccIdentificationGen2";
+                case 0x0005: return "CardChipIdentificationGen2";
                 case 0x0501: return "DriverCardApplicationIdentificationGen2";
                 case 0x0502: return "EventsDataGen2";
                 case 0x0503: return "FaultsDataGen2";
@@ -65,7 +67,7 @@ namespace DataFileReader
             Version = Context.Version;
             if (BlockType == 3)
             {
-                if (fid >= 0xC100 || fid == 0x050E) throw new ReaderException("Unexpected signature for unsigned EF");
+                if (fid >= 0xC100 || fid == 0x0002 || fid == 0x0005) throw new ReaderException("Unexpected signature for unsigned EF");
                 if (length != 64 && length != 96 && length != 128 && length != 132) throw new ReaderException("Invalid ECC signature size");
                 Signature = bytes;
                 return;

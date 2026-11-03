@@ -152,8 +152,12 @@ namespace DataFileReader
             else
             {
                 int magnitude = Math.Abs(value), degrees = magnitude / 1000, minutes = magnitude % 1000;
-                if (minutes >= 600 || degrees > (name == "Latitude" ? 90 : 180) || (degrees == (name == "Latitude" ? 90 : 180) && minutes != 0)) throw new ReaderException("Invalid GNSS coordinate");
-                element.Value = XmlConvert.ToString(Math.Sign(value) * (degrees + minutes / 600m));
+                if (minutes >= 600 || degrees > (name == "Latitude" ? 90 : 180) || (degrees == (name == "Latitude" ? 90 : 180) && minutes != 0))
+                {
+                    if (DataFile.StrictProcessing) throw new ReaderException("Invalid GNSS coordinate");
+                    element.Add(new XAttribute("Available", false), new XAttribute("Valid", false));
+                }
+                else element.Value = XmlConvert.ToString(Math.Sign(value) * (degrees + minutes / 600m));
             }
             Element.Add(element);
         }

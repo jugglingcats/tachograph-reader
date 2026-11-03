@@ -49,6 +49,8 @@ internal static class Gen2CardTests
         int gnss=full ? (version==1 ? 252 : 336) : 1, conditions=full ? (version==1 ? 56 : 112) : 1;
         int units=veh, activity=full ? (version==1 ? 5544 : 13776) : 32;
         var files = new Dictionary<int,byte[]>();
+        files[0x0002] = Tlv(0x0002,new byte[25]);
+        files[0x0005] = Tlv(0x0005,new byte[8]);
         files[0x0501] = Application(version,ev,faults,veh,places,gnss,conditions,units,activity);
         foreach (int fid in new[] {0xC100,0xC101,0xC108,0xC109}) files[fid]=Tlv(fid,new byte[204]);
         files[0x0520]=Tlv(0x0520,new byte[143]); files[0x0521]=Tlv(0x0521,new byte[53]);
@@ -130,7 +132,7 @@ internal static class Gen2CardTests
             {
                 for (int length=1; length<pair.Value.Length; length++)
                     Reject(Join(metadata,pair.Value.Take(length).ToArray()),"each TLV truncation");
-                if (pair.Key<0xC100 && pair.Key!=0x050E)
+                if (pair.Key<0xC100 && pair.Key!=0x0002 && pair.Key!=0x0005)
                 {
                     byte[] prefix = pair.Key==0x0501 ? (version==2 ? files[0x0525] : new byte[0]) : pair.Key==0x0525 ? files[0x0501] : metadata;
                     var paired=Parse(Join(prefix,pair.Value,Tlv(pair.Key,new byte[64],3)));
@@ -169,6 +171,21 @@ internal static class Gen2CardTests
         Check(mixed.Elements("EventsDataGen2").Descendants("CardEventRecord").Count()==11,"Gen2 event counts");
         var common = Parse(Join(Tlv(0x0002,new byte[25],0),Tlv(0x0005,new byte[8],0),Application(1)));
         Check(common.Element("CardIccIdentification") != null && common.Element("CardChipIdentification") != null,"common card files");
+        var taggedCommon = Parse(Join(Tlv(0x0002,new byte[25],0),Tlv(0x0005,new byte[8],0),Application(1),Tlv(0x0002,new byte[25]),Tlv(0x0005,new byte[8])));
+        Check(taggedCommon.Element("CardIccIdentification") != null && taggedCommon.Element("CardIccIdentificationGen2") != null,"ICC files retain both generations");
+        Check(taggedCommon.Element("CardChipIdentification") != null && taggedCommon.Element("CardChipIdentificationGen2") != null,"chip files retain both generations");
+        byte[] icc = Join(new byte[] {1},Time(42),new byte[] {0x12,0x24,3,4},Encoding.ASCII.GetBytes("APPROVAL"),new byte[] {5},Encoding.ASCII.GetBytes("AT"),new byte[] {0x12,0x34,6},Word(0x789a));
+        var identifiers = Parse(Join(Application(1),Tlv(0x0002,icc),Tlv(0x0005,new byte[] {1,2,3,4,5,6,7,8})));
+        Check(identifiers.Descendants("CardApprovalNumber").Single().Value=="APPROVAL" && identifiers.Descendants("CardPersonaliserId").Single().Value=="5","ICC fields");
+        Check(identifiers.Descendants("ModuleEmbedder").Single().Value=="1234" && identifiers.Descendants("IcIdentifier").Single().Value=="30874","ICC assembler and IC offsets");
+        Check(identifiers.Descendants("IcSerialNumber").Single().Value=="0x01020304" && identifiers.Descendants("IcManufacturingReferences").Single().Value=="0x05060708","chip identifiers");
+        foreach (int fid in new[] {0x0002,0x0005})
+        {
+            int size=fid==0x0002 ? 25 : 8;
+            Reject(Join(Application(1),Tlv(fid,new byte[size-1])),"short identification EF");
+            Reject(Join(Application(1),Tlv(fid,new byte[size+1])),"long identification EF");
+            Reject(Join(Application(1),Tlv(fid,new byte[size]),Tlv(fid,new byte[64],3)),"signature on unsigned identification EF");
+        }
         var empty=Parse(Join(Application(2,0,0,0,0,0,0,0,0),Extension(0,0,0),Tlv(0x0504,new byte[4]),Tlv(0x0505,new byte[2]),Tlv(0x0528,new byte[2])));
         Check(!empty.Descendants("CardActivityDailyRecord").Any() && !empty.Descendants("CardBorderCrossingRecord").Any(),"initialized empty buffers");
         foreach (int size in new[] {64,96,128,132})
@@ -181,6 +198,18 @@ internal static class Gen2CardTests
         byte[] unavailable = Join(new byte[] {1,13},Time(),new byte[] {10,0x7f,255,255},Number24(-14250),new byte[] {1},Number24(300));
         var unknown = Parse(Join(Application(2),Extension(),Tlv(0x0528,Ring(1,unavailable))));
         Check((string)unknown.Descendants("Latitude").Single().Attribute("Available")=="false","card unknown position");
+        byte[] invalidPosition = Join(Time(),Time(),new byte[] {10},Number24(48000),Number24(13600),Number24(300));
+        byte[] invalidCoordinates = Join(Application(1),Tlv(0x0524,Ring(1,invalidPosition)));
+        bool wasStrict=DataFile.StrictProcessing;
+        try
+        {
+            DataFile.StrictProcessing=false;
+            var invalidLongitude = Parse(invalidCoordinates).Descendants("Longitude").Single();
+            Check((string)invalidLongitude.Attribute("Raw")=="13600" && (string)invalidLongitude.Attribute("Valid")=="false" && (string)invalidLongitude.Attribute("Available")=="false" && invalidLongitude.Value=="","malformed coordinate retained without invented position");
+            DataFile.StrictProcessing=true;
+            Reject(invalidCoordinates,"strict malformed coordinate");
+        }
+        finally { DataFile.StrictProcessing=wasStrict; }
         byte[] extended = Join(Word(10),Word(1),Word(1),Word(1),Word(3),new byte[] {0xab,0xcd});
         Check(Parse(Join(Application(2),Tlv(0x0525,extended))).Descendants("ExtensionData").Single().Value=="0xABCD","application extension preserved");
         Validator.ValidateSignatures=true;

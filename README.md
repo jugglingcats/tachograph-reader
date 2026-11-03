@@ -20,9 +20,12 @@ Gen2 application-identification files may appear after their data files.
 Gen2 certificates, signatures and manufacturer-specific VU configuration remain
 opaque bytes. **ECC certificate-chain and signature verification is not
 implemented.** Gen2 output carries `SignatureStatus="NotVerified"`. The new
-formats have synthetic regression coverage; real Gen2 vehicle-unit and
-driver-card exports remain unverified. Decoding does not establish authenticity
-or regulatory compliance.
+formats have synthetic regression coverage, and private Gen2 version 1/2
+driver-card exports have been decoded. Real Gen2 vehicle-unit exports remain
+unverified. Decoding does not establish authenticity or regulatory compliance.
+
+Malformed GNSS coordinates retain their raw value with `Valid="false"` and
+`Available="false"`; they have no decimal position. Strict mode rejects them.
 
 ## Build
 
@@ -105,7 +108,8 @@ activities follow the cyclic record chain. See the
 
 Unknown block identifiers and truncated input raise errors in every processing
 mode. `DataFile.StrictProcessing = true` additionally rejects unconsumed Gen1
-elementary-file bytes. Gen2 record widths and counts are always checked.
+elementary-file bytes and malformed GNSS coordinates. Gen2 record widths and
+counts are always checked.
 
 ### Signature validation
 

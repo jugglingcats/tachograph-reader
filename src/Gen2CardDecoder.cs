@@ -52,6 +52,24 @@ namespace DataFileReader
             int count;
             switch (fid)
             {
+                case 0x0002:
+                    U("ClockStop");
+                    Serial("CardExtendedSerialNumber");
+                    S("CardApprovalNumber", 8);
+                    U("CardPersonaliserId");
+                    using (var assembler = new Gen2RecordReader(reader.ReadExactlyBytes(5), "EmbedderIcAssemblerId", 1))
+                    {
+                        assembler.S("CountryCode", 2);
+                        assembler.Region(new BCDStringRegion {Size=2}, "ModuleEmbedder");
+                        assembler.U("ManufacturerInformation");
+                        Element.Add(assembler.Element);
+                    }
+                    U("IcIdentifier", 2);
+                    break;
+                case 0x0005:
+                    H("IcSerialNumber", 4);
+                    H("IcManufacturingReferences", 4);
+                    break;
                 case 0x0501:
                     int type = reader.ReadByte();
                     if (type != 1) throw new NotSupportedException("This decoder requires a driver card application");
