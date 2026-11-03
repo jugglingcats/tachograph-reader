@@ -79,9 +79,13 @@ ECC trust-chain/signature verification is unsupported; enabling
 `Validator.ValidateSignatures` rejects Gen2 application or vehicle-unit data.
 Gen1 retains opt-in RSA validation. Parsing alone does not establish authenticity.
 
-Private mixed Gen1/Gen2 driver-card exports cover both Gen2 versions. Synthetic
-tests also cover card capacities through the version 2 load-operation limit.
-Real Gen2 vehicle-unit exports remain unverified. The external fixture
+Private driver-card and vehicle-unit exports cover both Gen2 versions.
+Vehicle-unit checks exercise strict parsing, full consumption, XML export,
+stream/handle ownership and explicit rejection of unsupported ECC verification.
+An independent wire scan checks Gen2 array boundaries, counts, VINs and retained
+certificate/signature bytes against the XML; semantic comparison with a trusted
+decoder remains outstanding. Synthetic tests also cover card capacities through
+the version 2 load-operation limit. The external fixture
 mode uses the five original Gen1 vehicle-unit files and can check RSA signatures
 and tamper rejection. Fixtures remain outside the child repository. Legacy
 build targets and hosted CI remain unverified. See the public usage guide for

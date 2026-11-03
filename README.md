@@ -21,8 +21,11 @@ Gen2 certificates, signatures and manufacturer-specific VU configuration remain
 opaque bytes. **ECC certificate-chain and signature verification is not
 implemented.** Gen2 output carries `SignatureStatus="NotVerified"`. The new
 formats have synthetic regression coverage, and private Gen2 version 1/2
-driver-card exports have been decoded. Real Gen2 vehicle-unit exports remain
-unverified. Decoding does not establish authenticity or regulatory compliance.
+vehicle-unit and driver-card exports have passed decoding checks. Vehicle-unit
+checks include strict parsing and comparison of record-array boundaries, counts,
+VINs and retained cryptographic bytes against the original files. Decoded fields
+have not been compared with an independent trusted decoder. Decoding does not
+establish authenticity or regulatory compliance.
 
 Malformed GNSS coordinates retain their raw value with `Valid="false"` and
 `Available="false"`; they have no decimal position. Strict mode rejects them.
