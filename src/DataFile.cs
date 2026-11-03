@@ -83,6 +83,13 @@ namespace DataFileReader
 			WriteLine(LogLevel.DEBUG, "Processing...");
 			SignatureRegion.Reset();
 			Validator.Reset();
+			Gen2CardContext cardContext = null;
+			foreach (Region configured in regions)
+			{
+				if (!(configured is ElementaryFileRegion) && !(configured is Gen2CardRegion)) continue;
+				cardContext = Gen2CardContext.ReadApplications(reader);
+				break;
+			}
 
 			// in this case we read a magic and try to process it
 			while ( true )
@@ -109,8 +116,22 @@ namespace DataFileReader
 					if ( r.Matches(magicString) )
 					{
 						WriteLine(LogLevel.DEBUG, "Identified region: {0} with magic {1} at 0x{2:X4}", r.Name, magicString, magicPos);
-						var newRegion = r.Copy();
+						Region newRegion;
+						long payloadPosition = reader.BaseStream.Position;
+						int blockType = cardContext != null ? reader.ReadByte() : -1;
+						reader.BaseStream.Position = payloadPosition;
+						if (r is ElementaryFileRegion && (blockType == 2 || blockType == 3))
+							newRegion = new Gen2CardRegion { Identifier = magicString, LogLevel = r.LogLevel };
+						else newRegion = r.Copy();
+						var gen2Card = newRegion as Gen2CardRegion;
+						if (gen2Card != null) gen2Card.Context = cardContext;
 						newRegion.Process(reader);
+						if (gen2Card != null && gen2Card.BlockType == 3)
+						{
+							var previous = ProcessedRegions.Count == 0 ? null : ProcessedRegions[ProcessedRegions.Count - 1] as Gen2CardRegion;
+							if (previous == null || previous.BlockType != 2 || previous.Identifier != gen2Card.Identifier)
+								throw new ReaderException("Gen2 signature must immediately follow its matching data EF");
+						}
 						this.ProcessedRegions.Add(newRegion);
 						matched = true;
 						break;
@@ -156,7 +177,8 @@ namespace DataFileReader
 		/// This defines what children we can have from the XML config
 		[XmlElement("IdentifiedObject", typeof(IdentifiedObjectRegion)),
 		XmlElement("ElementaryFile", typeof(ElementaryFileRegion)),
-		XmlElement("Gen2VehicleUnit", typeof(Gen2VehicleUnitRegion))]
+		XmlElement("Gen2VehicleUnit", typeof(Gen2VehicleUnitRegion)),
+		XmlElement("Gen2Card", typeof(Gen2CardRegion))]
 		public ArrayList Regions
 		{
 			get { return regions; }

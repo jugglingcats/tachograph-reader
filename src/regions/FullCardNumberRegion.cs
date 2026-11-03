@@ -26,7 +26,7 @@ namespace DataFileReader
 			type=(EquipmentType) reader.ReadByte();
 			issuingMemberState=reader.ReadByte();
 
-			if (type == EquipmentType.CompanyCard)
+			if (type == EquipmentType.CompanyCard || type == EquipmentType.ControlCard || type == EquipmentType.WorkshopCard)
 			{
 				driverIdentification = reader.ReadString(13);
 				consecutiveIndex = reader.ReadByte();

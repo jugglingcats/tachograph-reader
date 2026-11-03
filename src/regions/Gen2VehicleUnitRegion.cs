@@ -105,7 +105,7 @@ namespace DataFileReader
         public long Offset { get; set; }
         public List<XElement> Records { get; } = new List<XElement>();
     }
-    internal sealed class Gen2RecordReader : IDisposable
+    internal sealed partial class Gen2RecordReader : IDisposable
     {
         private readonly CustomBinaryReader reader;
         private readonly int version;

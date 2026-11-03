@@ -78,6 +78,7 @@ internal static class Program
         try
         {
             DataFile.StrictProcessing = true;
+            checks += Gen2CardTests.Run();
             for (int v = 1; v <= 2; v++)
                 for (int t = 1; t <= 5; t++)
                 {
@@ -133,12 +134,12 @@ internal static class Program
             Check(ring.ProcessedRegions.Count == 0, "empty ring consumed");
             byte[] badDay = (byte[])activity.Clone(); badDay[12] = 1;
             Reject(() => { using (var stream = new MemoryStream(badDay)) card.Process(stream); }, "daily record underflow");
-            byte[] missingCount = new byte[] {5,2,0,0,0};
+            byte[] missingCount = Join(new byte[] {5,2,0,0,144},new byte[144]);
             Reject(() => { using (var stream = new MemoryStream(missingCount)) card.Process(stream); }, "missing count reference");
-            byte[] overrun = new byte[] {5,7,0,0,1,0};
+            byte[] overrun = new byte[] {5,7,0,0,1,0,5,14,0,0,4,0,0,0,0};
             Reject(() => { using (var stream = new MemoryStream(overrun)) card.Process(stream); }, "EF overrun");
             byte[] gen2Card = new byte[] {5,1,2,0,0};
-            Reject(() => { using (var stream = new MemoryStream(gen2Card)) card.Process(stream); }, "Gen2 card cannot use Gen1 layout");
+            Reject(() => { using (var stream = new MemoryStream(gen2Card)) card.Process(stream); }, "empty Gen2 card TLV");
             using (var reader = new CustomBinaryReader(new MemoryStream(new byte[] {16,0xaa,0xfe})))
             {
                 var name = new CodePageStringRegion(2); name.Process(reader); Check(name.ToString() == "\u0218\u021b", "ISO 8859-16");

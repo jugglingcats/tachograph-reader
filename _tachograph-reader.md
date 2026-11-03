@@ -5,7 +5,8 @@ This branch maintains the supplied C# reader. The source entry points are
 seekable stream or a filename and `ToXML` exports the parsed regions. File parsing
 is serialized because the legacy region and validator APIs use shared static
 state. Do not change global processing/validation switches while parsing; reader
-instances and their XML exports are not safe for concurrent reuse. Caller streams stay open; filename and configuration handles are owned
+instances and their XML exports are not safe for concurrent reuse. Caller streams
+stay open; filename and configuration handles are owned
 and disposed by the library. A failed parse clears the file's results.
 
 ## Vehicle-unit downloads
@@ -29,10 +30,38 @@ has `SignatureStatus="NotVerified"`. `Validator.ValidateSignatures = true` rejec
 Gen2 downloads because ECC trust-chain/signature verification is not implemented.
 Gen1 retains its opt-in RSA validation; decoding does not establish authenticity.
 
-Driver-card processing retains generation 1 support and parser repairs.
-Gen2 driver-card EFs are rejected explicitly rather than parsed with Gen1 layouts.
+## Driver-card downloads
+
+`DriverCardDataFile.Create()` reads common files and Gen1 and Gen2 application
+TLVs in the same download. The third tag byte selects Gen1 data/signatures
+(00/01) or Gen2 data/signatures (02/03). Identical file IDs therefore use separate
+layouts. `Gen2CardRegion` exposes decoded fields in `Data` (`XElement`), the
+`BlockType`, application `Version` and the unverified signature bytes.
+Gen2 signatures remain visible as separate XML elements with their block type.
+
+A per-file `Gen2CardContext` reads application metadata before decoding records,
+so metadata may appear after data and Gen1 counts cannot overwrite Gen2 counts.
+Gen2 application versions 0100 and 0101 select card versions 1 and 2. Counts,
+record sizes, physical ring indexes, TLV lengths and signature adjacency are
+checked independently of strict mode. Fixed record arrays retain physical order
+and their newest-record pointer; daily activities follow the cyclic record chain.
+Missing count metadata, unsupported versions and malformed files fail explicitly.
+
+Both card versions decode identification, licence, download time, eleven event
+categories, faults, cyclic driver activities, vehicles with VINs, places with
+GNSS positions, current usage, controls, specific conditions, vehicle units used
+and accumulated-driving GNSS positions. Version 2 adds application metadata,
+place/GNSS authentication status, border crossings, load/unload operations and
+load-type entries. Authentication records remain separate and can be matched to
+positions by their timestamps; missing authentication is not inferred as valid.
+Certificates and manufacturer-specific VU configuration bytes remain opaque.
+Length-prefixed application extensions retain unrecognized bytes. ECC validation
+has the same explicit unsupported behavior as vehicle-unit downloads; decoding
+is available with the default `Validator.ValidateSignatures = false`.
+
 Unknown string encodings retain their raw bytes with `EncodingKnown="false"`;
-known code pages decode without ASCII substitution. Unknown top-level identifiers and truncated input fail in every mode.
+known code pages decode without ASCII substitution. Unknown top-level identifiers
+and truncated input fail in every mode.
 `DataFile.StrictProcessing` additionally rejects unconsumed elementary-file bytes.
 
 ## Specification ownership
@@ -42,7 +71,9 @@ Gen2 version 1 follows the user-supplied
 Appendix 7 DDP_029-DDP_034. Gen2 version 2 adds the revised layouts in
 [Commission Implementing Regulation (EU) 2021/1228](https://dtc.jrc.ec.europa.eu/iot_doc/EU_2021-1228.pdf),
 Appendix 1 sections 2.120, 2.174, 2.203a, 2.205, 2.208a and 2.219,
-and Appendix 7 DDP_028a-DDP_034. DTCO 4.0 corresponds to Gen2 version 1;
+and Appendix 7 DDP_028a-DDP_034. Card decoding additionally follows Appendix 1
+card data types, Appendix 2 section 4.2.2 and Appendix 7 DDP_035-DDP_046.
+DTCO 4.0 corresponds to Gen2 version 1;
 DTCO 4.1 corresponds to Gen2 version 2. These product names are not wire versions.
 
 ## Build and checks
@@ -69,7 +100,12 @@ remain an external compatibility evidence gap.
 Synthetic tests cover both Gen2 versions and every supported transfer, nonempty
 records, every truncated prefix, record widths/order, coordinate signs, activity
 bits, malformed RSA padding, stream ownership, reuse, short reads and concurrent
-file parses. Append `--validate-gen1` after the fixture directory to also verify the supplied
+file parses. Card checks cover both versions, realistic record capacities,
+application metadata after data, mixed Gen1/Gen2 files, cyclic wrap, common files,
+certificate/signature lengths, unknown GNSS positions, authentication records,
+count/length mismatches, pointer bounds, signature adjacency and every truncated
+small-fixture TLV. Real Gen2 driver-card downloads were not supplied. Append
+`--validate-gen1` after the fixture directory to also verify the supplied
 files with the Gen1 RSA path. CLI output is published only after successful
 parsing, and input/output path equality is rejected. No hosted pipeline or
 release route is defined by this change.
