@@ -1,111 +1,97 @@
 # Tachograph reader
 
-This branch maintains the supplied C# reader. The source entry points are
-`VehicleUnitDataFile.Create()` and `DriverCardDataFile.Create()`; `Process` reads a
-seekable stream or a filename and `ToXML` exports the parsed regions. File parsing
-is serialized because the legacy region and validator APIs use shared static
-state. Do not change global processing/validation switches while parsing; reader
-instances and their XML exports are not safe for concurrent reuse. Caller streams
-stay open; filename and configuration handles are owned
-and disposed by the library. A failed parse clears the file's results.
+The public [usage guide](README.md) owns supported-format summaries, build and
+CLI commands, API examples, signature limitations and regression instructions.
+This document owns parser boundaries and wire-format details for maintainers.
 
-## Vehicle-unit downloads
+## Entry points and state
 
-`src/VehicleUnitData.config` dispatches generation 1 identifiers 7601-7605,
-Gen2 version 1 identifiers 7621-7625, and Gen2 version 2 identifiers
-7631, 7632, 7633 and 7635. Detailed speed remains 7624 for both Gen2 versions.
-7600 contains the two-byte download interface version.
+`VehicleUnitDataFile.Create()` and `DriverCardDataFile.Create()` deserialize the
+embedded XML configuration into a `DataFile`. `DataFile.Process` dispatches
+identified blocks; `ToXML` exports `ProcessedRegions`. Unknown identifiers,
+truncation and Gen2 count/size mismatches fail explicitly. `StrictProcessing`
+additionally rejects unconsumed Gen1 elementary-file bytes.
 
-`Gen2VehicleUnitRegion` decodes the Appendix 7 record arrays in their defined
-order. It checks array boundaries, fixed record widths, singleton cardinality and
-signature size. Its `RecordArrays` expose type, width, byte offset and decoded
-`XElement` records. XML distinguishes generation and version. Coordinates retain
-the signed raw integer and export decimal degrees; 7FFFFF is unavailable.
-The decoder covers overview, activities, events/faults, detailed speed and
-technical records, including version 2 authenticated positions, border crossings,
-load/unload entries, map versions and extended calibration records.
+Whole-file parsing is serialized because legacy regions and `Validator` use
+static state. Keep global switches stable while parsing. Reader instances and
+XML exports are not safe for concurrent reuse. Each invocation clears prior
+results and global counts; failures clear the file's results. Caller streams
+remain open, while filename/configuration handles are disposed by their owner.
+`BoundedStream` preserves absolute offsets while preventing Gen1 elementary-file
+reads from crossing declared boundaries. CLI output publication is owned by
+`app/Program.cs`.
 
-Certificates and ECC signatures are retained as opaque hex values. Gen2 output
-has `SignatureStatus="NotVerified"`. `Validator.ValidateSignatures = true` rejects
-Gen2 downloads because ECC trust-chain/signature verification is not implemented.
-Gen1 retains its opt-in RSA validation; decoding does not establish authenticity.
+## Vehicle-unit decoding
 
-## Driver-card downloads
+`src/VehicleUnitData.config` dispatches Gen1 identifiers 7601-7605, Gen2 version 1
+identifiers 7621-7625 and Gen2 version 2 identifiers 7631, 7632, 7633 and 7635.
+Detailed speed remains 7624 for both Gen2 versions. 7600 contains the two-byte
+download-interface version. DTCO 4.0/4.1 product names correspond to Gen2 wire
+versions 1/2, not literal 4.0/4.1 wire values.
 
-`DriverCardDataFile.Create()` reads common files and Gen1 and Gen2 application
-TLVs in the same download. The third tag byte selects Gen1 data/signatures
-(00/01) or Gen2 data/signatures (02/03). Identical file IDs therefore use separate
-layouts. `Gen2CardRegion` exposes decoded fields in `Data` (`XElement`), the
-`BlockType`, application `Version` and the unverified signature bytes.
-Gen2 signatures remain visible as separate XML elements with their block type.
+`Gen2VehicleUnitRegion` reads Appendix 7 record arrays in their prescribed order
+and checks boundaries, record widths, singleton cardinality and signature sizes.
+`RecordArrays` expose type, width, offset and decoded `XElement` records. Gen2
+XML identifies generation/version and carries `SignatureStatus="NotVerified"`.
+The partial `Gen2RecordReader` reuses primitive regions for fields shared by
+vehicle units and cards; `src/Gen2CardDecoder.cs` owns its card-specific layouts.
 
-A per-file `Gen2CardContext` reads application metadata before decoding records,
-so metadata may appear after data and Gen1 counts cannot overwrite Gen2 counts.
-Gen2 application versions 0100 and 0101 select card versions 1 and 2. Counts,
-record sizes, physical ring indexes, TLV lengths and signature adjacency are
-checked independently of strict mode. Fixed record arrays retain physical order
-and their newest-record pointer; daily activities follow the cyclic record chain.
-Missing count metadata, unsupported versions and malformed files fail explicitly.
+## Driver-card decoding
 
-Both card versions decode identification, licence, download time, eleven event
-categories, faults, cyclic driver activities, vehicles with VINs, places with
-GNSS positions, current usage, controls, specific conditions, vehicle units used
-and accumulated-driving GNSS positions. Version 2 adds application metadata,
-place/GNSS authentication status, border crossings, load/unload operations and
-load-type entries. Authentication records remain separate and can be matched to
-positions by their timestamps; missing authentication is not inferred as valid.
-Certificates and manufacturer-specific VU configuration bytes remain opaque.
-Length-prefixed application extensions retain unrecognized bytes. ECC validation
-has the same explicit unsupported behavior as vehicle-unit downloads; decoding
-is available with the default `Validator.ValidateSignatures = false`.
+The third TLV tag byte selects Gen1 data/signatures (00/01) or Gen2
+data/signatures (02/03). Shared file IDs select separate layouts.
+`Gen2CardRegion` exposes `Data`, `BlockType`, application `Version` and signature
+bytes. Signature TLVs stay visible in XML and must immediately follow matching
+Gen2 data TLVs. Zero/reserved TLV lengths are rejected.
 
-Unknown string encodings retain their raw bytes with `EncodingKnown="false"`;
-known code pages decode without ASCII substitution. Unknown top-level identifiers
-and truncated input fail in every mode.
-`DataFile.StrictProcessing` additionally rejects unconsumed elementary-file bytes.
+A per-invocation `Gen2CardContext` scans card TLV headers and reads application
+metadata before decoding records. Metadata can therefore follow its data;
+Gen1 counts cannot overwrite Gen2 counts. Application versions 0100/0101 select
+card versions 1/2. Missing count metadata, duplicate application files,
+unsupported versions and count/pointer/length mismatches fail explicitly.
+Fixed card arrays retain physical order and their newest-record pointer. Daily
+activities follow the cyclic record chain through the newest record.
+
+Common files and Gen1 application layouts stay in `DriverCardData.config`.
+Gen2 versions share identification, licence, download, event/fault, activity,
+vehicle, place, current-use, control, condition, vehicle-unit and GNSS layouts.
+Version 2 adds EFs 0525 (application extension), 0526/0527 (place/GNSS
+authentication), 0528 (border crossings), 0529 (load/unload), 0530 (load types)
+and 0540 (VU configuration). Authentication records stay separate and associate
+with positions by timestamp; absence does not imply successful authentication.
+Length-prefixed application extensions retain unknown trailing bytes.
+
+## Data interpretation and verification limits
+
+Coordinates retain the signed raw integer and export decimal degrees; 7FFFFF
+means unavailable. Unknown string encodings retain raw bytes with
+`EncodingKnown="false"`; supported code pages decode without ASCII substitution.
+Workshop, control and company card numbers use the owner/consecutive-index
+layout, while driver card numbers use the driver identification layout.
+
+Gen2 certificates, ECC signatures and manufacturer VU configuration are opaque.
+ECC trust-chain/signature verification is unsupported; enabling
+`Validator.ValidateSignatures` rejects Gen2 application or vehicle-unit data.
+Gen1 retains opt-in RSA validation. Parsing alone does not establish authenticity.
+
+Real Gen2 exports were not supplied. Synthetic tests cover both versions and
+card capacities through the version 2 load-operation limit. The external fixture
+mode uses the five original Gen1 vehicle-unit files and can check RSA signatures
+and tamper rejection. Fixtures remain outside the child repository. Legacy
+build targets and hosted CI remain unverified. See the public usage guide for
+commands rather than treating synthetic coverage as device interoperability.
 
 ## Specification ownership
 
-Gen2 version 1 follows the user-supplied
-`../ECE-TRANS-SC1-GE21-INF-JUNE-2019-2e.-Rev.pdf`, Appendix 1 data dictionary and
-Appendix 7 DDP_029-DDP_034. Gen2 version 2 adds the revised layouts in
-[Commission Implementing Regulation (EU) 2021/1228](https://dtc.jrc.ec.europa.eu/iot_doc/EU_2021-1228.pdf),
-Appendix 1 sections 2.120, 2.174, 2.203a, 2.205, 2.208a and 2.219,
-and Appendix 7 DDP_028a-DDP_034. Card decoding additionally follows Appendix 1
-card data types, Appendix 2 section 4.2.2 and Appendix 7 DDP_035-DDP_046.
-DTCO 4.0 corresponds to Gen2 version 1;
-DTCO 4.1 corresponds to Gen2 version 2. These product names are not wire versions.
+Gen2 version 1 follows the
+[2019 UNECE specification](https://unece.org/DAM/trans/doc/2019/sc1/ECE-TRANS-SC1-GE21-INF-JUNE-2019-2e.-Rev.pdf):
+Appendix 1 data dictionary, Appendix 2 section 4.2.2 and Appendix 7 DDP_029-DDP_046.
+A separately supplied copy resides in the parent workspace's targets directory;
+it is not distributed by this child repository.
 
-## Build and checks
-
-The library retains netstandard2.0 and netcoreapp2.1 and adds net9.0. The console
-and dependency-free regression runner target net9.0. The legacy Framework console
-remains available in the solution, but requires its original reference packs.
-
-From this child repository, build the installed-SDK route with
-`dotnet build core/tachograph-reader-core.csproj -p:TargetFrameworks=net9.0`.
-Build all configured targets and the Framework console with
-`dotnet build tachograph-reader.sln` when the required legacy SDK/reference packs
-and packages are installed.
-
-Complete local regression validation is
-`dotnet build tests/tachograph-reader-tests.csproj -p:TargetFrameworks=net9.0`
-followed by
-`dotnet tests/bin/Debug/net9.0/tachograph-reader-tests.dll ..`.
-The optional directory argument selects the five supplied DDD fixtures; omit it
-for synthetic-only checks. No raw files or decoded personal data are embedded
-in the tests. The supplied fixtures are Gen1, so real Gen2 hardware exports
-remain an external compatibility evidence gap.
-
-Synthetic tests cover both Gen2 versions and every supported transfer, nonempty
-records, every truncated prefix, record widths/order, coordinate signs, activity
-bits, malformed RSA padding, stream ownership, reuse, short reads and concurrent
-file parses. Card checks cover both versions, realistic record capacities,
-application metadata after data, mixed Gen1/Gen2 files, cyclic wrap, common files,
-certificate/signature lengths, unknown GNSS positions, authentication records,
-count/length mismatches, pointer bounds, signature adjacency and every truncated
-small-fixture TLV. Real Gen2 driver-card downloads were not supplied. Append
-`--validate-gen1` after the fixture directory to also verify the supplied
-files with the Gen1 RSA path. CLI output is published only after successful
-parsing, and input/output path equality is rejected. No hosted pipeline or
-release route is defined by this change.
+Gen2 version 2 uses
+[Regulation (EU) 2021/1228](https://dtc.jrc.ec.europa.eu/iot_doc/EU_2021-1228.pdf),
+including Appendix 1 card types and sections 2.120, 2.174, 2.203a, 2.205, 2.208a
+and 2.219, Appendix 2 card structures, and Appendix 7 DDP_028a-DDP_046. Inspect
+the schema images as well as extracted text when changing layouts: several
+record definitions and card file tables are images in the supplied PDF.
