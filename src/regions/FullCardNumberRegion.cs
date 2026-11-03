@@ -8,22 +8,32 @@ namespace DataFileReader
 	{
 		DriverCard=1,
 		WorkshopCard=2,
-		ControlCard=3
+		ControlCard=3,
+		CompanyCard=4
 		// TODO: M: there are more
 	}
 
-	// see page 72 - we only support driver cards
+	// See page 72; company card numbers have a separate consecutive index.
 	public class FullCardNumberRegion : CardNumberRegion
 	{
 		EquipmentType type;
 		byte issuingMemberState;
+		byte? consecutiveIndex;
 
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
+			consecutiveIndex = null;
 			type=(EquipmentType) reader.ReadByte();
 			issuingMemberState=reader.ReadByte();
 
-			base.ProcessInternal(reader);
+			if (type == EquipmentType.CompanyCard || type == EquipmentType.ControlCard || type == EquipmentType.WorkshopCard)
+			{
+				driverIdentification = reader.ReadString(13);
+				consecutiveIndex = reader.ReadByte();
+				replacementIndex = reader.ReadByte();
+				renewalIndex = reader.ReadByte();
+			}
+			else base.ProcessInternal(reader);
 		}
 
 		public override string ToString()
@@ -37,6 +47,7 @@ namespace DataFileReader
 			writer.WriteAttributeString("Type", type.ToString());
 			writer.WriteAttributeString("IssuingMemberState", issuingMemberState.ToString());
 
+			if (consecutiveIndex.HasValue) writer.WriteAttributeString("ConsecutiveIndex", consecutiveIndex.Value.ToString());
 			base.InternalToXML(writer);
 		}
 	}

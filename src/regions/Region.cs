@@ -58,7 +58,7 @@ namespace DataFileReader
 			return region;
 		}
 
-		public void Process(CustomBinaryReader reader)
+		public virtual void Process(CustomBinaryReader reader)
 		{
 			// Store start of region (for logging only)
 			byteOffset=reader.BaseStream.Position;
@@ -85,13 +85,13 @@ namespace DataFileReader
 
 			if ( GlobalValue )
 			{
-                globalValues[Name] = ToString();
+				globalValues[Name] = ToString();
 			}
 		}
 
 		protected void WriteLine(LogLevel level, string format, params object[] args)
 		{
-			if ( level >= LogLevel )
+			if ( LogLevel != LogLevel.NONE && level >= LogLevel )
 				Console.WriteLine(format, args);
 		}
 

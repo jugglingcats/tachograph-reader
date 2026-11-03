@@ -15,18 +15,19 @@ namespace DataFileReader
 
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
-			if ( Count == 0 && CountRef != null )
+			uint count = Count;
+			if ( CountRef != null )
 			{
 				string refName=CountRef.Substring(1);
 				if (globalValues.Contains(refName))
 				{
-					Count=uint.Parse((string) globalValues[refName]);
+					count=uint.Parse((string) globalValues[refName]);
 				} else
 				{
-					WriteLine(LogLevel.WARN, "RepeatingRegion {0} doesn't contain ref {1}", Name, refName);
+					throw new ReaderException("Missing count reference " + refName);
 				}
 			}
-			ProcessItems(reader, Count);
+			ProcessItems(reader, count);
 		}
 	}
 }

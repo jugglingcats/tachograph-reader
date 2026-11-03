@@ -5,7 +5,11 @@ using System.Security.Cryptography;
 using System.Numerics;
 using System.Reflection;
 using System.Linq;
+#if NET9_0_OR_GREATER
+using System.Formats.Asn1;
+#else
 using System.Security.Cryptography.Asn1;
+#endif
 
 namespace DataFileReader
 {
@@ -40,14 +44,19 @@ namespace DataFileReader
 
 			public byte[] Decrypt(BigInteger data)
 			{
+				if (data < 0 || data >= this.Modulus) throw new InvalidSignatureException("RSA representative out of range");
 				var result = BigInteger.ModPow(data, this.Exponent, this.Modulus);
 
 				#if (NETCOREAPP2_1 || NETCOREAPP2_2)
-					return result.ToByteArray(true, true);
+					var bytes = result.ToByteArray(true, true);
 				#else
 					// convert back to big-endian
-					return result.ToByteArray().Reverse().ToArray();
+					var bytes = result.ToByteArray().Reverse().SkipWhile(b => b == 0).ToArray();
 				#endif
+				if (bytes.Length > 128) throw new InvalidSignatureException("Invalid RSA message length");
+				var message = new byte[128];
+				bytes.CopyTo(message, message.Length - bytes.Length);
+				return message;
 			}
 		}
 
@@ -74,7 +83,7 @@ namespace DataFileReader
 				this.nation = reader.ReadByte();
 				this.nationCode = new String(reader.ReadChars(3)).Trim();
 				this.serialNumber = reader.ReadByte();
-				this.additionalInfo = reader.ReadUInt16();
+				this.additionalInfo = (ushort)((reader.ReadByte() << 8) | reader.ReadByte());
 				this.caIdentifier = reader.ReadByte();
 			}
 
@@ -92,7 +101,6 @@ namespace DataFileReader
 			public override bool Equals(object other)
 			{
 				if (other is null) return false;
-				if (Object.ReferenceEquals(this, other)) return true;
 				if (this.GetType() != other.GetType()) return false;
 				return this.Equals((CertificationAuthorityReference)other);
 			}
@@ -120,14 +128,18 @@ namespace DataFileReader
 			public DigestAlgorithmIdentifier(AsnReader asnReader)
 			{
 				asnReader = asnReader.ReadSequence();
+				#if NET9_0_OR_GREATER
+				this.algorithm = new Oid(asnReader.ReadObjectIdentifier());
+#else
 				this.algorithm = asnReader.ReadObjectIdentifier();
-				if (asnReader.PeekTag() == Asn1Tag.Null)
+#endif
+				if (asnReader.HasData && asnReader.PeekTag() == Asn1Tag.Null)
 				{
 					asnReader.ReadNull();
 					this.parameters = null;
 				} else
 				{
-					this.parameters = asnReader.ReadEncodedValue().ToArray();
+					this.parameters = asnReader.HasData ? asnReader.ReadEncodedValue().ToArray() : null;
 				};
 
 				asnReader.ThrowIfNotEmpty();
@@ -150,9 +162,9 @@ namespace DataFileReader
 
 			public bool VerifyData(byte[] data)
 			{
-				if (this.digestAlgorithm.algorithm.FriendlyName == "sha1")
+				if (this.digestAlgorithm.algorithm.Value == "1.3.14.3.2.26")
 				{
-					using (SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider())
+					using (SHA1 sha1 = SHA1.Create())
 					{
 						if (sha1.ComputeHash(data).SequenceEqual(this.digest))
 						{
@@ -197,6 +209,7 @@ namespace DataFileReader
 					this.one = message[1];
 					this.padding = message.Skip(2).TakeWhile(m => m == 0xFF).ToArray();
 					var position = 2 + this.padding.Length;
+					if (position >= message.Length) return;
 					this.separator = message[position];
 					this.digestInfoData = message.Skip(position + 1).Take(size - position).ToArray();
 				};
@@ -205,8 +218,8 @@ namespace DataFileReader
 			public bool IsValid()
 			{
 				return this.zero == 0x00 && this.one == 0x01 &&
-				       this.padding.Length > 0 && this.padding[0] == 0xFF &&
-				       this.separator == 0x00 && this.digestInfoData.Length > 0;
+				       this.padding != null && this.padding.Length >= 8 && this.padding[0] == 0xFF &&
+				       this.separator == 0x00 && this.digestInfoData != null && this.digestInfoData.Length > 0;
 			}
 
 			public DigestInfo GetDigestInfo()
@@ -312,7 +325,7 @@ namespace DataFileReader
 				if (this.IsValid())
 				{
 					var certificateData = this.certificateHeader.Concat(publicKeyRemainder).ToArray();
-					using (SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider())
+					using (SHA1 sha1 = SHA1.Create())
 					{
 						if (sha1.ComputeHash(certificateData).SequenceEqual(this.sha1))
 						{

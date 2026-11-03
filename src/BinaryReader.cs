@@ -12,13 +12,25 @@ namespace DataFileReader
 		// get clock ticks since 1 January 1970
 		private static readonly long ticks1970 = new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks; 
 
-		public CustomBinaryReader(Stream s) : base(s)
+		public CustomBinaryReader(Stream s) : this(s, false)
 		{
+		}
+
+		public CustomBinaryReader(Stream s, bool leaveOpen) : base(s, Encoding.UTF8, leaveOpen)
+		{
+		}
+
+		public byte[] ReadExactlyBytes(int count)
+		{
+			if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+			var bytes = base.ReadBytes(count);
+			if (bytes.Length != count) throw new EndOfStreamException("Truncated tachograph data");
+			return bytes;
 		}
 
 		public uint ReadSInt32()
 		{
-			// in tachograph file number is little-endian
+			// Tachograph integers are big-endian.
 
 			byte r1=ReadByte();
 			byte r2=ReadByte();
@@ -52,11 +64,7 @@ namespace DataFileReader
 
 		public string ReadString(int length, Encoding enc)
 		{
-			byte[] buf=new byte[length];
-
-			int amountRead=Read(buf, 0, length);
-			if ( amountRead != length )
-				throw new InvalidOperationException("End of file while reading a string");
+			byte[] buf=ReadExactlyBytes(length);
 
 			int nullPos = Array.IndexOf(buf, (byte)0x00);
 			if (nullPos >= 0 && nullPos < length)
@@ -64,7 +72,9 @@ namespace DataFileReader
 				Array.Resize(ref buf, nullPos);
 			}
 
-			char[] chars=enc.GetChars(buf);
+			int end = buf.Length;
+			while (end > 0 && buf[end - 1] == 0xFF) end--;
+			char[] chars=enc.GetChars(buf, 0, end);
 			return new string(chars);
 		}
 
@@ -77,7 +87,7 @@ namespace DataFileReader
 			long absTicks=ticks1970 + offset * 10000000L;
 
 			// and convert to actual date time class
-			return new DateTime(absTicks);
+			return new DateTime(absTicks, DateTimeKind.Utc);
 		}
 
 		public uint ReadBCDString(int lengthInBytes)
@@ -85,17 +95,12 @@ namespace DataFileReader
 			const byte frontMask = 0xF0;
 			const byte backMask = 0x0F;
 
-			if (lengthInBytes > 4)
+			if (lengthInBytes < 0 || lengthInBytes > 4)
 			{
 				throw new InvalidOperationException("Length too big");
 			}
 
-			byte[] octets = new byte[lengthInBytes];
-			int amountRead = Read(octets, 0, lengthInBytes);
-			if (amountRead != lengthInBytes)
-			{
-				throw new InvalidOperationException("End of file while reading a string");
-			}
+			byte[] octets = ReadExactlyBytes(lengthInBytes);
 
 			uint result = 0;
 			for (int i = 0; i < lengthInBytes; ++i)

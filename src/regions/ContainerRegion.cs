@@ -19,6 +19,7 @@ namespace DataFileReader
 
 		protected override void ProcessInternal(CustomBinaryReader reader)
 		{
+			this.ProcessedRegions.Clear();
 			// iterate over all child regions and process them
 			foreach ( Region r in regions )
 			{

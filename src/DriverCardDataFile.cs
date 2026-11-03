@@ -16,10 +16,9 @@ namespace DataFileReader
 			// construct using embedded config
 			Assembly a = typeof(DriverCardDataFile).GetTypeInfo().Assembly;
 			string name = a.FullName.Split(',')[0]+".DriverCardData.config";
-			Stream stm = a.GetManifestResourceStream(name);
-			XmlReader xtr = XmlReader.Create(stm);
-
-			return Create(xtr);
+			using (Stream stm = a.GetManifestResourceStream(name))
+			using (XmlReader xtr = XmlReader.Create(stm))
+				return Create(xtr);
 		}
 	}
 }
